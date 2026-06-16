@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>MotoGestor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100">
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+/* ====================================================================
+   COLE SUAS DUAS CHAVES AQUI (entre as aspas) E SALVE O ARQUIVO
+   ==================================================================== */
+const SUPABASE_URL = "https://vtqgfpkmprulzomkghxq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RCuLfwkZqCFE4RiKlQg4RA_4UyLT8bh";
+/* ==================================================================== */
+
+const sb = (SUPABASE_URL.startsWith("http")) ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const SEMANAS_MES = 4;
+const STATUS = {
+  disponivel: { label: "Disponível", cls: "bg-green-100 text-green-700" },
+  alugada: { label: "Alugada", cls: "bg-blue-100 text-blue-700" },
+  manutencao: { label: "Em manutenção", cls: "bg-amber-100 text-amber-700" },
+};
+const brl = (n) => (Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const today = () => new Date().toISOString().slice(0,10);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2));
+const addDays = (iso,n) => { const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const fmtDate = (iso) => { if(!iso) return "—"; const [y,m,d]=iso.split("-"); return d+"/"+m+"/"+y; };
+const mesLabel = (ym) => { const [y,m]=ym.split("-"); return MESES[+m-1]+"/"+y; };
+const motoValor = (m) => Number(m.valor||0);
+const motoEntrada = (m) => Number(m.valor_entrada||0);
+
+function relatorioMoto(m, caixa, cicloId){
+  const lanc = caixa.filter(c => c.moto_id===m.id && (cicloId===undefined || c.ciclo_id===cicloId));
+  const receitaAluguel = lanc.filter(c=>c.tipo==="entrada"&&c.aluguel).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const multas = lanc.filter(c=>c.tipo==="entrada"&&c.multa).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const entradaContrato = lanc.filter(c=>c.tipo==="entrada"&&c.entrada_contrato).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const outras = lanc.filter(c=>c.tipo==="entrada"&&!c.aluguel&&!c.multa&&!c.entrada_contrato).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const despesas = lanc.filter(c=>c.tipo==="saida"&&!c.comissao_paga).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const comissaoPaga = lanc.filter(c=>c.tipo==="saida"&&c.comissao_paga).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const comissaoDevida = receitaAluguel * (Number(m.taxa_admin)||0)/100;
+  const comissaoApagar = comissaoDevida - comissaoPaga;
+  const resultado = receitaAluguel + multas + entradaContrato + outras - despesas - comissaoDevida;
+  const nPg = lanc.filter(c=>c.aluguel).length;
+  return { receitaAluguel, multas, entradaContrato, outras, despesas, comissaoDevida, comissaoPaga, comissaoApagar, resultado, nPg };
+}
+function histMoto(m, caixa){
+  const pg = caixa.filter(c => c.moto_id===m.id && c.aluguel);
+  return { nPgTotal: pg.length, totalRecebido: pg.reduce((s,c)=>s+(Number(c.valor)||0),0) };
+}
+
+function Row({label,val,cls="text-slate-700",bold}){
+  return <div className="flex justify-between"><span className="text-slate-500">{label}</span><span className={cls+" "+(bold?"font-bold":"")}>{val}</span></div>;
+}
+function KPI({label,val,cls="text-slate-800"}){
+  return <div className="bg-white rounded-xl p-3 shadow-sm"><div className="text-xs text-slate-500">{label}</div><div className={"font-bold text-lg "+cls}>{val}</div></div>;
+}
+function PeriodoSelect({caixa,periodo,setPeriodo}){
+  const meses = Array.from(new Set(caixa.map(c=>(c.data||"").slice(0,7)).filter(Boolean))).sort().reverse();
+  return <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={periodo} onChange={e=>setPeriodo(e.target.value)}>
+    <option value="tudo">Todo o período</option>
+    {meses.map(ym=> <option key={ym} value={ym}>{mesLabel(ym)}</option>)}
+  </select>;
+}
+
+function Login({ onError }){
+  const [email,setEmail]=useState(""); const [senha,setSenha]=useState(""); const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
+  const entrar = async () => {
+    setErr(""); setBusy(true);
+    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: senha });
+    setBusy(false);
+    if(error) setErr("E-mail ou senha incorretos.");
+  };
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-6">
+        <div className="text-2xl font-bold text-slate-800 mb-1">🏍️ MotoGestor</div>
+        <p className="text-sm text-slate-500 mb-5">Entre com seu e-mail e senha.</p>
+        <div className="space-y-3">
+          <input className="w-full border rounded-lg px-3 py-2" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} />
+          <input type="password" className="w-full border rounded-lg px-3 py-2" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&entrar()} />
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          <button onClick={entrar} disabled={busy} className="w-full bg-slate-800 text-white rounded-lg py-2 font-medium">{busy?"Entrando...":"Entrar"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MotoForm({ initial, investidores, onSave, onCancel }){
+  const [f,setF]=useState(initial ? {...initial} : { modelo:"",placa:"",ano:"",valor:"",valor_entrada:"",taxa_admin:"",status:"disponivel",proprietario_id:"" });
+  const set=(k,v)=>setF(s=>({...s,[k]:v}));
+  const semanal=Number(f.valor)||0; const mensal=semanal*SEMANAS_MES; const comissao=semanal*(Number(f.taxa_admin)||0)/100;
+  return (
+    <div className="bg-slate-50 border rounded-xl p-4 space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <input className="border rounded-lg px-3 py-2 col-span-2" placeholder="Modelo (ex: Honda CG 160)" value={f.modelo} onChange={e=>set("modelo",e.target.value)} />
+        <input className="border rounded-lg px-3 py-2" placeholder="Placa" value={f.placa||""} onChange={e=>set("placa",e.target.value)} />
+        <input className="border rounded-lg px-3 py-2" placeholder="Ano" value={f.ano||""} onChange={e=>set("ano",e.target.value)} />
+        <div><label className="text-xs text-slate-500">Aluguel semanal (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={f.valor||""} onChange={e=>set("valor",e.target.value)} /></div>
+        <div><label className="text-xs text-slate-500">Valor da entrada (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={f.valor_entrada||""} onChange={e=>set("valor_entrada",e.target.value)} /></div>
+        <div className="col-span-2"><label className="text-xs text-slate-500">Comissão do gestor (%)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={f.taxa_admin||""} onChange={e=>set("taxa_admin",e.target.value)} /></div>
+        <div className="col-span-2"><label className="text-xs text-slate-500">Pertence a (investidor)</label>
+          <select className="border rounded-lg px-3 py-2 w-full" value={f.proprietario_id||""} onChange={e=>set("proprietario_id",e.target.value)}>
+            <option value="">Próprio (meu)</option>
+            {investidores.map(i=> <option key={i.id} value={i.id}>{i.nome}</option>)}
+          </select>
+        </div>
+        <select className="border rounded-lg px-3 py-2 col-span-2" value={f.status} onChange={e=>set("status",e.target.value)}>
+          {Object.entries(STATUS).map(([k,v])=> <option key={k} value={k}>{v.label}</option>)}
+        </select>
+      </div>
+      {semanal>0 && <div className="text-xs bg-white border rounded-lg p-2 text-slate-600 space-y-1">
+        <div className="flex justify-between"><span>Equivalente mensal (≈{SEMANAS_MES} sem.):</span><b>{brl(mensal)}</b></div>
+        <div className="flex justify-between"><span>Comissão por semana:</span><b>{brl(comissao)}</b></div>
+      </div>}
+      <div className="flex gap-2">
+        <button onClick={()=> f.modelo.trim() && onSave(f)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button>
+        <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function LocForm({ initial, onSave, onCancel }){
+  const [f,setF]=useState(initial || { nome:"",telefone:"",documento:"",obs:"" });
+  const set=(k,v)=>setF(s=>({...s,[k]:v}));
+  return (
+    <div className="bg-slate-50 border rounded-xl p-4 space-y-2">
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nome" value={f.nome} onChange={e=>set("nome",e.target.value)} />
+      <div className="grid grid-cols-2 gap-2">
+        <input className="border rounded-lg px-3 py-2" placeholder="Telefone" value={f.telefone||""} onChange={e=>set("telefone",e.target.value)} />
+        <input className="border rounded-lg px-3 py-2" placeholder="CPF / Documento" value={f.documento||""} onChange={e=>set("documento",e.target.value)} />
+      </div>
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Observações" value={f.obs||""} onChange={e=>set("obs",e.target.value)} />
+      <div className="flex gap-2">
+        <button onClick={()=> f.nome.trim() && onSave(f)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button>
+        <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function VincForm({ mode, list, onSave, onCancel }){
+  const [sel,setSel]=useState(""); const [venc,setVenc]=useState(addDays(today(),7));
+  const [lancar,setLancar]=useState(true); const [entradaVal,setEntradaVal]=useState("");
+  const selItem = list.find(x=>x.id===sel); const entrada = selItem ? (selItem.entrada||0) : 0;
+  useEffect(()=>{ setEntradaVal(entrada>0?String(entrada):""); },[sel]);
+  return (
+    <div className="mt-2 bg-slate-50 border rounded-lg p-3 space-y-2">
+      {list.length===0 ? <p className="text-sm text-slate-500">{mode==="fromMoto"?"Cadastre um locatário primeiro.":"Nenhuma moto disponível."}</p> : <>
+        <select className="border rounded-lg px-3 py-2 w-full text-sm" value={sel} onChange={e=>setSel(e.target.value)}>
+          <option value="">{mode==="fromMoto"?"Selecione o locatário":"Selecione a moto"}</option>
+          {list.map(x=> <option key={x.id} value={x.id}>{x.label}</option>)}
+        </select>
+        <label className="text-xs text-slate-500 block">Data do 1º vencimento</label>
+        <input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={venc} onChange={e=>setVenc(e.target.value)} />
+        {entrada>0 && <div className="space-y-1">
+          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={lancar} onChange={e=>setLancar(e.target.checked)} />Lançar entrada (cadastrada: {brl(entrada)})</label>
+          {lancar && <div><label className="text-xs text-slate-500">Valor recebido (pode ser parcial)</label><input type="number" className="border rounded-lg px-3 py-2 w-full text-sm" value={entradaVal} onChange={e=>setEntradaVal(e.target.value)} /></div>}
+        </div>}
+        <div className="flex gap-2">
+          <button onClick={()=> sel && onSave(sel, venc, entrada>0&&lancar?(Number(entradaVal)||0):0)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm">Vincular</button>
+          <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
+        </div>
+      </>}
+    </div>
+  );
+}
+
+function PagamentoForm({ moto, onSave, onCancel }){
+  const [aluguel,setAluguel]=useState(String(motoValor(moto)));
+  const [multa,setMulta]=useState(""); const [despesas,setDespesas]=useState([]);
+  const [dVal,setDVal]=useState(""); const [dDesc,setDDesc]=useState(""); const [data,setData]=useState(today());
+  const pct=Number(moto.taxa_admin)||0; const comissao=(Number(aluguel)||0)*pct/100;
+  const totalDesp=despesas.reduce((s,d)=>s+(Number(d.valor)||0),0);
+  const liquido=(Number(aluguel)||0)-comissao+(Number(multa)||0)-totalDesp;
+  const addDespesa=()=>{ const v=Number(dVal)||0; if(v<=0) return; setDespesas(s=>[...s,{valor:v,descricao:dDesc.trim()}]); setDVal(""); setDDesc(""); };
+  return (
+    <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+      <div><label className="text-xs text-slate-600">Aluguel recebido (entra na comissão)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={aluguel} onChange={e=>setAluguel(e.target.value)} /></div>
+      <div><label className="text-xs text-slate-600">Multa / juros (não entra na comissão)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={multa} onChange={e=>setMulta(e.target.value)} /></div>
+      <div className="border-t border-green-200 pt-2">
+        <label className="text-xs text-slate-600">Despesas da moto (cada uma vira uma saída)</label>
+        {despesas.map((d,i)=> <div key={i} className="flex items-center justify-between bg-white border rounded-lg px-3 py-1.5 mt-1 text-sm"><span className="truncate">{d.descricao||"Despesa"} · <b className="text-red-500">{brl(d.valor)}</b></span><button onClick={()=>setDespesas(s=>s.filter((_,j)=>j!==i))} className="text-slate-300 ml-2">✕</button></div>)}
+        <div className="grid grid-cols-2 gap-2 mt-1">
+          <input type="number" className="border rounded-lg px-3 py-2 text-sm" placeholder="Valor (R$)" value={dVal} onChange={e=>setDVal(e.target.value)} />
+          <input className="border rounded-lg px-3 py-2 text-sm" placeholder="Descrição" value={dDesc} onChange={e=>setDDesc(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addDespesa()} />
+        </div>
+        <button onClick={addDespesa} className="w-full mt-1 text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5">+ Adicionar despesa</button>
+        {totalDesp>0 && <div className="text-xs text-slate-500 mt-1 text-right">Total despesas: <b className="text-red-500">{brl(totalDesp)}</b></div>}
+      </div>
+      <div><label className="text-xs text-slate-600">Data</label><input type="date" className="border rounded-lg px-3 py-2 w-full" value={data} onChange={e=>setData(e.target.value)} /></div>
+      <div className="text-xs bg-white border rounded-lg p-2 text-slate-600 flex justify-between"><span>Comissão ({pct}%): <b>{brl(comissao)}</b></span><span>Resultado: <b>{brl(liquido)}</b></span></div>
+      <div className="flex gap-2">
+        <button onClick={()=>onSave(Number(aluguel)||0, Number(multa)||0, despesas, data)} className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium">Confirmar</button>
+        <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function RelatorioCard({ m, caixa, historico, onPagarComissao }){
+  const r = relatorioMoto(m, caixa, m.ciclo_atual);
+  const [pagando,setPagando]=useState(false); const [val,setVal]=useState(""); const [dt,setDt]=useState(today());
+  return (
+    <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="font-semibold">{m.modelo} · {m.placa}</div>
+      {historico && historico.nPgTotal>0 && <div className="text-xs text-slate-400 mb-1">Esta moto já recebeu {historico.nPgTotal} pagamento(s) no total · {brl(historico.totalRecebido)} (todos os locatários)</div>}
+      {m.ciclo_atual && <div className="text-[11px] text-blue-500 mb-2">Valores abaixo: contrato atual</div>}
+      <div className="space-y-1 text-sm">
+        <Row label={"Aluguel recebido ("+r.nPg+" pgto)"} val={brl(r.receitaAluguel)} cls="text-green-600" />
+        <Row label="Multas / juros recebidos" val={brl(r.multas)} cls="text-green-600" />
+        {r.entradaContrato>0 && <Row label="Entrada de contrato" val={brl(r.entradaContrato)} cls="text-green-600" />}
+        {r.outras>0 && <Row label="Outras entradas" val={brl(r.outras)} cls="text-green-600" />}
+        {r.despesas>0 && <Row label="Despesas (saídas)" val={"− "+brl(r.despesas)} cls="text-red-500" />}
+        <div className="border-t my-1"></div>
+        <Row label={"Comissão devida ("+(m.taxa_admin||0)+"%)"} val={brl(r.comissaoDevida)} cls="text-amber-600" />
+        <Row label="Comissão já paga" val={brl(r.comissaoPaga)} cls="text-slate-500" />
+        <Row label="Comissão a pagar" val={brl(r.comissaoApagar)} cls={r.comissaoApagar>0.005?"text-amber-700":"text-green-600"} bold />
+        <div className="border-t my-1"></div>
+        <Row label="Resultado para você" val={brl(r.resultado)} bold cls={r.resultado>=0?"text-green-600":"text-red-500"} />
+      </div>
+      {onPagarComissao && (pagando ? (
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+          <label className="text-xs text-slate-600 block">Valor pago ao gestor</label>
+          <input type="number" className="border rounded-lg px-3 py-2 w-full text-sm" value={val} onChange={e=>setVal(e.target.value)} />
+          <input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={dt} onChange={e=>setDt(e.target.value)} />
+          <div className="flex gap-2">
+            <button onClick={()=>{ const v=Number(val)||r.comissaoApagar; if(v>0){ onPagarComissao(m,v,dt); setPagando(false); setVal(""); } }} className="flex-1 bg-amber-600 text-white rounded-lg py-2 text-sm">Confirmar</button>
+            <button onClick={()=>setPagando(false)} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
+          </div>
+        </div>
+      ) : ( r.comissaoApagar>0.005 && <button onClick={()=>{ setPagando(true); setVal(String(r.comissaoApagar.toFixed(2))); }} className="mt-3 w-full text-sm border border-amber-300 text-amber-700 rounded-lg py-1.5">Registrar pagamento de comissão</button> ))}
+    </div>
+  );
+}
+
+function App(){
+  const [loading,setLoading]=useState(true);
+  const [session,setSession]=useState(null);
+  const [profile,setProfile]=useState(null);
+  const [tab,setTab]=useState("dash");
+  const [data,setData]=useState({ motos:[],locatarios:[],caixa:[],investidores:[] });
+  const [periodo,setPeriodo]=useState("tudo");
+  const [filtroVenc,setFiltroVenc]=useState(""); const [filtroRel,setFiltroRel]=useState("");
+  const [addMoto,setAddMoto]=useState(false); const [editMoto,setEditMoto]=useState(null);
+  const [addLoc,setAddLoc]=useState(false); const [editLoc,setEditLoc]=useState(null);
+  const [vincMoto,setVincMoto]=useState(null); const [vincLoc,setVincLoc]=useState(null); const [payMoto,setPayMoto]=useState(null);
+
+  const loadData = async (role) => {
+    const motos = await sb.from("motos").select("*").order("created_at",{ascending:true});
+    const caixa = await sb.from("caixa").select("*").order("data",{ascending:false});
+    let locatarios={data:[]}, investidores={data:[]};
+    if(role==="admin"){
+      locatarios = await sb.from("locatarios").select("*").order("created_at",{ascending:true});
+      investidores = await sb.from("profiles").select("*").eq("role","investidor");
+    }
+    setData({ motos:motos.data||[], caixa:caixa.data||[], locatarios:locatarios.data||[], investidores:investidores.data||[] });
+  };
+  const reload = () => loadData(profile?.role);
+
+  const handleSession = async (s) => {
+    if(!s){ setSession(null); setProfile(null); setLoading(false); return; }
+    setSession(s);
+    const { data: prof } = await sb.from("profiles").select("*").eq("id", s.user.id).single();
+    setProfile(prof);
+    await loadData(prof ? prof.role : "investidor");
+    setLoading(false);
+  };
+
+  useEffect(()=>{
+    if(!sb) { setLoading(false); return; }
+    sb.auth.getSession().then(({data})=> handleSession(data.session));
+    const { data: sub } = sb.auth.onAuthStateChange((_e,s)=> handleSession(s));
+    return ()=> sub.subscription.unsubscribe();
+  },[]);
+
+  if(!sb){
+    return <div className="min-h-screen flex items-center justify-center p-6 text-center text-slate-600">
+      <div><div className="text-2xl mb-2">⚙️</div>Cole o <b>Project URL</b> e a <b>chave</b> no topo do arquivo (linhas marcadas) e salve. Depois recarregue.</div>
+    </div>;
+  }
+  if(loading) return <div className="min-h-screen flex items-center justify-center text-slate-400">Carregando…</div>;
+  if(!session) return <Login />;
+
+  const isAdmin = profile && profile.role==="admin";
+  const caixaFiltrado = periodo==="tudo" ? data.caixa : data.caixa.filter(c=>(c.data||"").startsWith(periodo));
+  const locName = (id) => { const l=data.locatarios.find(x=>x.id===id); return l?l.nome:"—"; };
+  const invName = (id) => { const i=data.investidores.find(x=>x.id===id); return i?i.nome:"—"; };
+  const motoDoLoc = (lid) => data.motos.find(m=> m.vinculo && m.vinculo.locatarioId===lid);
+  const motosDisponiveis = data.motos.filter(m=> !m.vinculo);
+
+  // ---- ações (admin) ----
+  const saveMoto = async (f) => {
+    const payload = { modelo:f.modelo, placa:f.placa, ano:f.ano, valor:Number(f.valor)||0, valor_entrada:Number(f.valor_entrada)||0, taxa_admin:Number(f.taxa_admin)||0, status:f.status, proprietario_id:f.proprietario_id||null };
+    const res = f.id ? await sb.from("motos").update(payload).eq("id",f.id) : await sb.from("motos").insert(payload);
+    if(res.error) return alert("Erro ao salvar moto: "+res.error.message);
+    setAddMoto(false); setEditMoto(null); reload();
+  };
+  const delMoto = async (id) => { if(!confirm("Excluir esta moto?")) return; const res=await sb.from("motos").delete().eq("id",id); if(res.error) return alert(res.error.message); reload(); };
+  const saveLoc = async (f) => {
+    const payload = { nome:f.nome, telefone:f.telefone, documento:f.documento, obs:f.obs };
+    const res = f.id ? await sb.from("locatarios").update(payload).eq("id",f.id) : await sb.from("locatarios").insert(payload);
+    if(res.error) return alert("Erro: "+res.error.message);
+    setAddLoc(false); setEditLoc(null); reload();
+  };
+  const delLoc = async (id) => {
+    if(!confirm("Excluir este locatário?")) return;
+    const afetadas = data.motos.filter(m=> m.vinculo && m.vinculo.locatarioId===id);
+    for(const m of afetadas){ await sb.from("motos").update({ vinculo:null, status:"disponivel" }).eq("id",m.id); }
+    const res = await sb.from("locatarios").delete().eq("id",id);
+    if(res.error) return alert(res.error.message);
+    reload();
+  };
+  const criarVinculo = async (motoId, locatarioId, locatarioNome, dataVenc, entradaVal) => {
+    const ciclo = uid();
+    const vinculo = { locatarioId, locatarioNome, dataInicio:today(), proximoVencimento:dataVenc, cicloId:ciclo };
+    const r1 = await sb.from("motos").update({ status:"alugada", ciclo_atual:ciclo, vinculo }).eq("id",motoId);
+    if(r1.error) return alert(r1.error.message);
+    if(entradaVal>0) await sb.from("caixa").insert({ tipo:"entrada", entrada_contrato:true, valor:entradaVal, descricao:"Entrada de contrato "+locatarioNome, moto_id:motoId, data:today(), ciclo_id:ciclo });
+    setVincMoto(null); setVincLoc(null); reload();
+  };
+  const desvincular = async (motoId) => { const res=await sb.from("motos").update({ vinculo:null, status:"disponivel" }).eq("id",motoId); if(res.error) return alert(res.error.message); reload(); };
+  const registrarPagamento = async (m, aluguelVal, multaVal, despesas, dataPg) => {
+    const ciclo = m.vinculo.cicloId; const nome=m.vinculo.locatarioNome||""; const rows=[];
+    if(aluguelVal>0) rows.push({ tipo:"entrada", aluguel:true, valor:aluguelVal, descricao:"Aluguel "+nome, moto_id:m.id, data:dataPg, ciclo_id:ciclo });
+    if(multaVal>0) rows.push({ tipo:"entrada", multa:true, valor:multaVal, descricao:"Multa/juros "+nome, moto_id:m.id, data:dataPg, ciclo_id:ciclo });
+    (despesas||[]).forEach(d=>{ const v=Number(d.valor)||0; if(v>0) rows.push({ tipo:"saida", valor:v, descricao:d.descricao||("Despesa "+m.modelo), moto_id:m.id, data:dataPg, ciclo_id:ciclo }); });
+    if(rows.length){ const res=await sb.from("caixa").insert(rows); if(res.error) return alert(res.error.message); }
+    const base = m.vinculo.proximoVencimento < today() ? today() : m.vinculo.proximoVencimento;
+    await sb.from("motos").update({ vinculo:{ ...m.vinculo, proximoVencimento:addDays(base,7) } }).eq("id",m.id);
+    setPayMoto(null); reload();
+  };
+  const pagarComissao = async (m, valor, dt) => { const res=await sb.from("caixa").insert({ tipo:"saida", comissao_paga:true, valor, descricao:"Comissão gestor — "+m.modelo+" "+m.placa, moto_id:m.id, data:dt }); if(res.error) return alert(res.error.message); reload(); };
+
+  const sair = async () => { await sb.auth.signOut(); };
+
+  // ===== INVESTIDOR =====
+  if(!isAdmin){
+    const minhas = data.motos.filter(m=> m.proprietario_id===profile.id);
+    return (
+      <div className="min-h-screen text-slate-800">
+        <div className="bg-indigo-700 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+          <div className="font-bold">👁️ Painel do Investidor</div>
+          <button onClick={sair} className="text-sm bg-indigo-600 px-3 py-1.5 rounded-lg">Sair</button>
+        </div>
+        <div className="max-w-2xl mx-auto p-4 space-y-3">
+          <div className="bg-white rounded-xl p-4 shadow-sm"><div className="text-sm text-slate-500">Olá,</div><div className="font-semibold text-lg">{profile.nome}</div><div className="text-sm text-slate-500 mt-1">{minhas.length} moto(s)</div></div>
+          <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
+          {minhas.length===0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto vinculada ao seu acesso.</p>}
+          {minhas.map(m=> (
+            <div key={m.id} className="space-y-2">
+              <div className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center">
+                <div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{m.vinculo ? "Locatário: "+(m.vinculo.locatarioNome||"—")+" · vence "+fmtDate(m.vinculo.proximoVencimento) : "Sem locatário"}</div></div>
+                <span className={"text-xs px-2 py-1 rounded-full "+STATUS[m.status].cls}>{STATUS[m.status].label}</span>
+              </div>
+              <RelatorioCard m={m} caixa={caixaFiltrado} historico={histMoto(m, data.caixa)} />
+            </div>
+          ))}
+          <p className="text-[11px] text-slate-400 text-center pt-2">Visão somente leitura. Período selecionado acima.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== ADMIN =====
+  const tabs=[["dash","📊 Painel"],["motos","🏍️ Motos"],["locatarios","👥 Locatários"],["caixa","💰 Caixa"],["vencimentos","🔔 Vencimentos"],["relatorios","📈 Relatórios"],["config","⚙️ Investidores"]];
+  const vencidos = data.motos.filter(m=> m.vinculo && m.vinculo.proximoVencimento < today()).length;
+  const q=filtroVenc.trim().toLowerCase();
+  const vencList = data.motos.filter(m=>m.vinculo).filter(m=> !q || (m.placa||"").toLowerCase().includes(q) || (m.vinculo.locatarioNome||"").toLowerCase().includes(q)).sort((a,b)=> a.vinculo.proximoVencimento.localeCompare(b.vinculo.proximoVencimento));
+  const relMotos = filtroRel ? data.motos.filter(m=>m.id===filtroRel) : data.motos;
+  const ult=(()=>{const arr=[];const d=new Date();for(let i=5;i>=0;i--){const dd=new Date(d.getFullYear(),d.getMonth()-i,1);arr.push({ym:dd.toISOString().slice(0,7),label:MESES[dd.getMonth()]});}return arr;})();
+  const chartData=ult.map(x=>({label:x.label, aluguel:data.caixa.filter(c=>c.aluguel&&(c.data||"").startsWith(x.ym)).reduce((s,c)=>s+(Number(c.valor)||0),0)}));
+  const maxCh=Math.max(...chartData.map(x=>x.aluguel),1);
+  const dAlug=caixaFiltrado.filter(c=>c.aluguel).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const dMulta=caixaFiltrado.filter(c=>c.multa).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  let cDev=0,cPag=0,cRes=0; data.motos.forEach(m=>{const r=relatorioMoto(m,caixaFiltrado);cDev+=r.comissaoDevida;cPag+=r.comissaoPaga;cRes+=r.resultado;});
+  const cont={disponivel:0,alugada:0,manutencao:0}; data.motos.forEach(m=>{cont[m.status]=(cont[m.status]||0)+1;});
+
+  return (
+    <div className="min-h-screen text-slate-800">
+      <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+        <div className="font-bold">🏍️ MotoGestor</div>
+        <button onClick={sair} className="text-sm bg-slate-700 px-3 py-1.5 rounded-lg">Sair</button>
+      </div>
+      <div className="flex overflow-x-auto bg-white border-b sticky top-[52px] z-10">
+        {tabs.map(([k,label])=> <button key={k} onClick={()=>setTab(k)} className={"flex-1 min-w-[88px] py-2.5 text-xs relative "+(tab===k?"text-slate-900 border-b-2 border-slate-800 font-medium":"text-slate-400")}>{label}{k==="vencimentos"&&vencidos>0&&<span className="absolute top-1 right-3 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 inline-flex items-center justify-center">{vencidos}</span>}</button>)}
+      </div>
+      <div className="max-w-2xl mx-auto p-4 pb-20">
+
+        {tab==="dash" && <div className="space-y-3">
+          <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
+          <div className="grid grid-cols-2 gap-2">
+            <KPI label="Aluguel recebido" val={brl(dAlug)} cls="text-green-600" />
+            <KPI label="Multas / juros" val={brl(dMulta)} cls="text-green-600" />
+            <KPI label="Comissão a pagar" val={brl(cDev-cPag)} cls="text-amber-600" />
+            <KPI label="Resultado p/ você" val={brl(cRes)} cls={cRes>=0?"text-green-600":"text-red-500"} />
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <KPI label="Motos" val={data.motos.length} />
+            <KPI label="Alugadas" val={cont.alugada} cls="text-blue-600" />
+            <KPI label="Disponív." val={cont.disponivel} cls="text-green-600" />
+            <KPI label="Manut." val={cont.manutencao} cls="text-amber-600" />
+          </div>
+          {vencidos>0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">⚠️ {vencidos} aluguel(éis) vencido(s). Veja na aba Vencimentos.</div>}
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="font-semibold text-sm mb-3">Aluguel recebido — últimos 6 meses</div>
+            <div className="flex items-end gap-2 h-40">
+              {chartData.map((d,i)=> <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                <div className="text-[9px] text-slate-500">{d.aluguel>0?brl(d.aluguel).replace("R$","").trim():""}</div>
+                <div className="w-full bg-green-500 rounded-t" style={{height:(d.aluguel>0?Math.max(6,(d.aluguel/maxCh)*120):2)+"px"}}></div>
+                <div className="text-[11px] text-slate-400 mt-1">{d.label}</div>
+              </div>)}
+            </div>
+          </div>
+        </div>}
+
+        {tab==="motos" && <div className="space-y-3">
+          {!addMoto&&!editMoto && <button onClick={()=>setAddMoto(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 font-medium">+ Cadastrar moto</button>}
+          {addMoto && <MotoForm investidores={data.investidores} onSave={saveMoto} onCancel={()=>setAddMoto(false)} />}
+          {data.motos.map(m=> editMoto===m.id ? <MotoForm key={m.id} initial={m} investidores={data.investidores} onSave={saveMoto} onCancel={()=>setEditMoto(null)} /> : (
+            <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="flex justify-between items-start">
+                <div><div className="font-semibold">{m.modelo}</div><div className="text-sm text-slate-500">{m.placa} {m.ano&&("· "+m.ano)}</div><div className="text-xs text-slate-400 mt-0.5">Dono: {m.proprietario_id?invName(m.proprietario_id):"Próprio"}</div></div>
+                <span className={"text-xs px-2 py-1 rounded-full "+STATUS[m.status].cls}>{STATUS[m.status].label}</span>
+              </div>
+              <div className="mt-2 text-sm grid grid-cols-2 gap-1 bg-slate-50 rounded-lg p-2">
+                <span>Semana<br/><b>{brl(motoValor(m))}</b></span>
+                <span>Mês (≈{SEMANAS_MES})<br/><b>{brl(motoValor(m)*SEMANAS_MES)}</b></span>
+                <span>Entrada<br/><b>{brl(motoEntrada(m))}</b></span>
+                <span>Comissão {m.taxa_admin||0}%<br/><b>{brl(motoValor(m)*(m.taxa_admin||0)/100)}</b></span>
+              </div>
+              {m.vinculo ? <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2 flex justify-between items-center"><span>👤 {m.vinculo.locatarioNome} · vence {fmtDate(m.vinculo.proximoVencimento)}</span><button onClick={()=>desvincular(m.id)} className="text-red-500">desvincular</button></div>
+                : <button onClick={()=>setVincMoto(m.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 text-slate-600">🔗 Vincular locatário</button>}
+              {vincMoto===m.id && <VincForm mode="fromMoto" list={data.locatarios.map(l=>({id:l.id,label:l.nome,entrada:motoEntrada(m)}))} onSave={(lid,venc,ent)=>criarVinculo(m.id,lid,locName(lid),venc,ent)} onCancel={()=>setVincMoto(null)} />}
+              <div className="flex gap-3 mt-3 text-sm">
+                <button onClick={()=>setEditMoto(m.id)} className="text-slate-600">✏️ Editar</button>
+                <button onClick={()=>delMoto(m.id)} className="text-red-500">🗑️ Excluir</button>
+              </div>
+            </div>
+          ))}
+          {data.motos.length===0&&!addMoto && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto cadastrada.</p>}
+        </div>}
+
+        {tab==="locatarios" && <div className="space-y-3">
+          {!addLoc&&!editLoc && <button onClick={()=>setAddLoc(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 font-medium">+ Cadastrar locatário</button>}
+          {addLoc && <LocForm onSave={saveLoc} onCancel={()=>setAddLoc(false)} />}
+          {data.locatarios.map(l=>{ const moto=motoDoLoc(l.id); return editLoc===l.id ? <LocForm key={l.id} initial={l} onSave={saveLoc} onCancel={()=>setEditLoc(null)} /> : (
+            <div key={l.id} className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="font-semibold">{l.nome}</div>
+              <div className="text-sm text-slate-500">{l.telefone} {l.documento&&("· "+l.documento)}</div>
+              {l.obs && <div className="text-sm text-slate-400 mt-1">{l.obs}</div>}
+              {moto ? <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2 flex justify-between items-center"><span>🏍️ {moto.modelo} · {moto.placa} · vence {fmtDate(moto.vinculo.proximoVencimento)}</span><button onClick={()=>desvincular(moto.id)} className="text-red-500">desvincular</button></div>
+                : <button onClick={()=>setVincLoc(l.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 text-slate-600">🔗 Vincular motocicleta</button>}
+              {vincLoc===l.id && <VincForm mode="fromLoc" list={motosDisponiveis.map(m=>({id:m.id,label:m.modelo+" "+m.placa,entrada:motoEntrada(m)}))} onSave={(mid,venc,ent)=>criarVinculo(mid,l.id,l.nome,venc,ent)} onCancel={()=>setVincLoc(null)} />}
+              <div className="flex gap-3 mt-3 text-sm">
+                <button onClick={()=>setEditLoc(l.id)} className="text-slate-600">✏️ Editar</button>
+                <button onClick={()=>delLoc(l.id)} className="text-red-500">🗑️ Excluir</button>
+              </div>
+            </div>
+          );})}
+          {data.locatarios.length===0&&!addLoc && <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário cadastrado.</p>}
+        </div>}
+
+        {tab==="caixa" && <Caixa data={data} reload={reload} />}
+
+        {tab==="vencimentos" && <div className="space-y-3">
+          <input className="border rounded-lg px-3 py-2 w-full text-sm" placeholder="🔍 Filtrar por placa ou locatário" value={filtroVenc} onChange={e=>setFiltroVenc(e.target.value)} />
+          {vencList.length===0 && <p className="text-center text-slate-400 text-sm py-8">{data.motos.some(m=>m.vinculo)?"Nenhum resultado para o filtro.":"Nenhum aluguel ativo."}</p>}
+          {vencList.map(m=>{ const pv=m.vinculo.proximoVencimento; const venc=pv<today(); const av=!venc&&pv<=addDays(today(),3); return (
+            <div key={m.id} className={"bg-white rounded-xl p-4 shadow-sm border-l-4 "+(venc?"border-red-500":av?"border-amber-400":"border-green-400")}>
+              <div className="flex justify-between items-start">
+                <div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{m.vinculo.locatarioNome}</div><div className="text-sm mt-1">Vencimento: <b>{fmtDate(pv)}</b></div></div>
+                <span className={"text-xs px-2 py-1 rounded-full "+(venc?"bg-red-100 text-red-700":av?"bg-amber-100 text-amber-700":"bg-green-100 text-green-700")}>{venc?"Vencido":av?"A vencer":"Em dia"}</span>
+              </div>
+              <div className="flex justify-between items-center mt-2"><span className="text-sm">Aluguel: <b>{brl(motoValor(m))}</b></span>{payMoto!==m.id && <button onClick={()=>setPayMoto(m.id)} className="bg-green-600 text-white text-sm px-3 py-1.5 rounded-lg">✔ Registrar pagamento</button>}</div>
+              {payMoto===m.id && <PagamentoForm moto={m} onSave={(a,mu,des,dt)=>registrarPagamento(m,a,mu,des,dt)} onCancel={()=>setPayMoto(null)} />}
+            </div>
+          );})}
+        </div>}
+
+        {tab==="relatorios" && <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
+            <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroRel} onChange={e=>setFiltroRel(e.target.value)}>
+              <option value="">Todas as motos</option>
+              {data.motos.map(m=> <option key={m.id} value={m.id}>{m.placa||m.modelo}</option>)}
+            </select>
+          </div>
+          {data.motos.length===0 && <p className="text-center text-slate-400 text-sm py-8">Cadastre motos para ver relatórios.</p>}
+          {relMotos.map(m=> <RelatorioCard key={m.id} m={m} caixa={caixaFiltrado} historico={histMoto(m,data.caixa)} onPagarComissao={pagarComissao} />)}
+          {!filtroRel && data.motos.length>0 && <div className="bg-slate-800 text-white rounded-xl p-4 space-y-1 text-sm">
+            <div className="font-semibold mb-1">Total geral {periodo!=="tudo"&&("· "+mesLabel(periodo))}</div>
+            <div className="flex justify-between"><span>Aluguel recebido</span><b>{brl(dAlug)}</b></div>
+            <div className="flex justify-between"><span>Multas / juros</span><b>{brl(dMulta)}</b></div>
+            <div className="flex justify-between border-t border-slate-600 pt-1"><span>Comissão devida</span><b>{brl(cDev)}</b></div>
+            <div className="flex justify-between"><span>Comissão já paga</span><b>{brl(cPag)}</b></div>
+            <div className="flex justify-between text-amber-300"><span>Comissão a pagar</span><b>{brl(cDev-cPag)}</b></div>
+          </div>}
+        </div>}
+
+        {tab==="config" && <div className="space-y-3">
+          <div className="bg-white rounded-xl p-4 shadow-sm text-sm text-slate-600 space-y-2">
+            <div className="font-semibold text-slate-800">Como adicionar um investidor</div>
+            <p>1. No painel do Supabase, vá em <b>Authentication → Users → Add user</b> e crie o login (e-mail + senha) do investidor.</p>
+            <p>2. Aqui no app, em <b>Motos</b>, edite a moto e escolha o investidor no campo <b>"Pertence a"</b>.</p>
+            <p>O investidor entra com o e-mail/senha que você criou e vê só as motos dele, em modo leitura.</p>
+          </div>
+          <div className="font-medium text-slate-700 text-sm">Investidores cadastrados</div>
+          {data.investidores.map(i=> <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">{data.motos.filter(m=>m.proprietario_id===i.id).length} moto(s)</div></div></div>)}
+          {data.investidores.length===0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum investidor ainda. Crie pelo painel do Supabase.</p>}
+        </div>}
+
+      </div>
+    </div>
+  );
+}
+
+function Caixa({ data, reload }){
+  const [f,setF]=useState({ tipo:"entrada", valor:"", descricao:"", moto_id:"", data:today() });
+  const set=(k,v)=>setF(s=>({...s,[k]:v}));
+  const add = async () => {
+    if(!f.valor) return;
+    const res = await sb.from("caixa").insert({ tipo:f.tipo, valor:Number(f.valor), descricao:f.descricao, moto_id:f.moto_id||null, data:f.data, aluguel:false, multa:false });
+    if(res.error) return alert(res.error.message);
+    setF({ tipo:"entrada", valor:"", descricao:"", moto_id:"", data:today() }); reload();
+  };
+  const del = async (id) => { const res=await sb.from("caixa").delete().eq("id",id); if(res.error) return alert(res.error.message); reload(); };
+  const entradas=data.caixa.filter(c=>c.tipo==="entrada").reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const saidas=data.caixa.filter(c=>c.tipo==="saida").reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const motoLabel=(id)=>{const m=data.motos.find(x=>x.id===id);return m?(m.modelo+" "+m.placa):null;};
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-green-50 rounded-xl p-3 text-center"><div className="text-xs text-slate-500">Entradas</div><div className="font-bold text-green-600">{brl(entradas)}</div></div>
+        <div className="bg-red-50 rounded-xl p-3 text-center"><div className="text-xs text-slate-500">Saídas</div><div className="font-bold text-red-500">{brl(saidas)}</div></div>
+        <div className="bg-slate-800 rounded-xl p-3 text-center text-white"><div className="text-xs text-slate-300">Saldo</div><div className="font-bold">{brl(entradas-saidas)}</div></div>
+      </div>
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+        <div className="flex gap-2">
+          <button onClick={()=>set("tipo","entrada")} className={"flex-1 py-2 rounded-lg text-sm font-medium "+(f.tipo==="entrada"?"bg-green-600 text-white":"bg-slate-100")}>Entrada</button>
+          <button onClick={()=>set("tipo","saida")} className={"flex-1 py-2 rounded-lg text-sm font-medium "+(f.tipo==="saida"?"bg-red-500 text-white":"bg-slate-100")}>Saída</button>
+        </div>
+        <input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="Valor (R$)" value={f.valor} onChange={e=>set("valor",e.target.value)} />
+        <input className="border rounded-lg px-3 py-2 w-full" placeholder="Descrição" value={f.descricao} onChange={e=>set("descricao",e.target.value)} />
+        <div className="grid grid-cols-2 gap-2">
+          <select className="border rounded-lg px-3 py-2 text-sm" value={f.moto_id} onChange={e=>set("moto_id",e.target.value)}>
+            <option value="">Sem moto vinculada</option>
+            {data.motos.map(m=> <option key={m.id} value={m.id}>{m.modelo} {m.placa}</option>)}
+          </select>
+          <input type="date" className="border rounded-lg px-3 py-2 text-sm" value={f.data} onChange={e=>set("data",e.target.value)} />
+        </div>
+        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">+ Lançar</button>
+      </div>
+      <div className="space-y-2">
+        {data.caixa.length===0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum lançamento.</p>}
+        {data.caixa.map(c=> (
+          <div key={c.id} className="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center">
+            <div><div className="font-medium text-sm">{c.descricao||(c.tipo==="entrada"?"Entrada":"Saída")}
+              {c.aluguel&&<span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded ml-1">aluguel</span>}
+              {c.multa&&<span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded ml-1">multa</span>}
+              {c.entrada_contrato&&<span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded ml-1">entrada</span>}
+              {c.comissao_paga&&<span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-1">comissão</span>}
+            </div><div className="text-xs text-slate-400">{fmtDate(c.data)} {motoLabel(c.moto_id)&&("· "+motoLabel(c.moto_id))}</div></div>
+            <div className="flex items-center gap-2"><span className={"font-semibold text-sm "+(c.tipo==="entrada"?"text-green-600":"text-red-500")}>{c.tipo==="entrada"?"+":"−"} {brl(c.valor)}</span><button onClick={()=>del(c.id)} className="text-slate-300">✕</button></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
