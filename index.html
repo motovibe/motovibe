@@ -1,588 +1,725 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>MotoGestor</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MotoVibe — Controle de Aluguel de Motos</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100">
 <div id="root"></div>
-
 <script type="text/babel" data-presets="react">
-const { useState, useEffect } = React;
+/* @jsxRuntime classic */
+const { useState, useEffect, useRef } = React;
 
-/* ====================================================================
-   COLE SUAS DUAS CHAVES AQUI (entre as aspas) E SALVE O ARQUIVO
-   ==================================================================== */
+/* ============================================================
+   >>>>>>>>>>  COLE AQUI AS SUAS 2 CHAVES DO SUPABASE  <<<<<<<<<<
+   (no painel do Supabase: Settings -> API Keys / botao Connect)
+   Troque o texto entre aspas, mantendo as aspas.
+   ============================================================ */
 const SUPABASE_URL = "https://vtqgfpkmprulzomkghxq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_RCuLfwkZqCFE4RiKlQg4RA_4UyLT8bh";
-/* ==================================================================== */
+/* ============================================================ */
 
-const sb = (SUPABASE_URL.startsWith("http")) ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+/* ---- icones (substituem o lucide-react) ---- */
+const Svg = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props} />;
+const Bike = (p) => <Svg {...p}><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 18 11 8h4M9 8h6l2 10M14 6h3"/></Svg>;
+const Users = (p) => <Svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Svg>;
+const Wallet = (p) => <Svg {...p}><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 9h18"/><path d="M16 13h.01"/></Svg>;
+const Bell = (p) => <Svg {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Svg>;
+const BarChart3 = (p) => <Svg {...p}><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-8"/></Svg>;
+const LogOut = (p) => <Svg {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></Svg>;
+const Exit = LogOut;
+const Plus = (p) => <Svg {...p}><path d="M12 5v14M5 12h14"/></Svg>;
+const Trash2 = (p) => <Svg {...p}><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></Svg>;
+const Pencil = (p) => <Svg {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></Svg>;
+const Link2 = (p) => <Svg {...p}><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><path d="M8 12h8"/></Svg>;
+const Unlink = (p) => <Svg {...p}><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 4 8"/><path d="M3 3l18 18"/></Svg>;
+const Check = (p) => <Svg {...p}><path d="M20 6 9 17l-5-5"/></Svg>;
+const X = (p) => <Svg {...p}><path d="M18 6 6 18M6 6l12 12"/></Svg>;
+const AlertTriangle = (p) => <Svg {...p}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Svg>;
+const Lock = (p) => <Svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Svg>;
+const Settings = (p) => <Svg {...p}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></Svg>;
+const UserPlus = (p) => <Svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></Svg>;
+const Eye = (p) => <Svg {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></Svg>;
+const LayoutDashboard = (p) => <Svg {...p}><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></Svg>;
+const Search = (p) => <Svg {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Svg>;
 
-const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-const SEMANAS_MES = 4;
+/* ---- grafico simples (substitui o recharts) ---- */
+const MiniBarChart = ({ data, max }) => {
+  const m = max || Math.max.apply(null, data.map((d) => d.recebido).concat(1));
+  return (
+    <div className="flex items-end gap-2" style={{ height: 200 }}>
+      {data.map((d, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+          <div className="text-[10px] text-slate-500 mb-1">{d.recebido > 0 ? brl(d.recebido) : ""}</div>
+          <div className="w-full bg-green-600 rounded-t-md" style={{ height: Math.max(2, (d.recebido / m) * 150) }} />
+          <div className="text-[11px] text-slate-500 mt-1">{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* ---- conexao com o Supabase (substitui o window.storage) ---- */
+let _supabase = null;
+try { const { createClient } = supabase; _supabase = createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Erro ao iniciar Supabase:", e); }
+window.storage = {
+  async get(key) {
+    const { data, error } = await _supabase.from("app_state").select("data").eq("id", key).maybeSingle();
+    if (error) throw error;
+    return data ? { value: JSON.stringify(data.data) } : null;
+  },
+  async set(key, value) {
+    const { error } = await _supabase.from("app_state").upsert({ id: key, data: JSON.parse(value) });
+    if (error) throw error;
+  },
+};
+
+/* ====================== APLICATIVO ====================== */
+
 const STATUS = {
   disponivel: { label: "Disponível", cls: "bg-green-100 text-green-700" },
   alugada: { label: "Alugada", cls: "bg-blue-100 text-blue-700" },
   manutencao: { label: "Em manutenção", cls: "bg-amber-100 text-amber-700" },
 };
-const brl = (n) => (Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const today = () => new Date().toISOString().slice(0,10);
-const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2));
-const addDays = (iso,n) => { const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
-const fmtDate = (iso) => { if(!iso) return "—"; const [y,m,d]=iso.split("-"); return d+"/"+m+"/"+y; };
-const mesLabel = (ym) => { const [y,m]=ym.split("-"); return MESES[+m-1]+"/"+y; };
-const motoValor = (m) => Number(m.valor||0);
-const motoEntrada = (m) => Number(m.valor_entrada||0);
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const JUROS_PCT = 10;   // juros por atraso
+const DIAS_JUROS = 7;   // aplicado 7 dias após o vencimento da parcela
 
-function relatorioMoto(m, caixa, cicloId){
-  const lanc = caixa.filter(c => c.moto_id===m.id && (cicloId===undefined || c.ciclo_id===cicloId));
-  const receitaAluguel = lanc.filter(c=>c.tipo==="entrada"&&c.aluguel).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const multas = lanc.filter(c=>c.tipo==="entrada"&&c.multa).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const entradaContrato = lanc.filter(c=>c.tipo==="entrada"&&c.entrada_contrato).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const outras = lanc.filter(c=>c.tipo==="entrada"&&!c.aluguel&&!c.multa&&!c.entrada_contrato).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const despesas = lanc.filter(c=>c.tipo==="saida"&&!c.comissao_paga).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const comissaoPaga = lanc.filter(c=>c.tipo==="saida"&&c.comissao_paga).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const comissaoDevida = receitaAluguel * (Number(m.taxa_admin)||0)/100;
+const brl = (n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const today = () => new Date().toISOString().slice(0, 10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const round2 = (x) => Math.round((Number(x) || 0) * 100) / 100;
+function addDays(iso, n) { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function daysBetween(a, b) { return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000); }
+function fmtDate(iso) { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; }
+function mesLabel(ym) { const [y, m] = ym.split("-"); return `${MESES[Number(m) - 1]}/${y}`; }
+const valSem = (m) => Number(m.valor ?? m.valorSemana ?? 0);
+const motoEntrada = (m) => Number(m.valorEntrada ?? 0);
+function diasAtraso(pv) { if (!pv) return 0; return daysBetween(pv, today()); }
+function proxSemana(firstDue, ref) { if (firstDue >= ref) return firstDue; let d = firstDue, g = 0; while (d < ref && g < 2000) { d = addDays(d, 7); g++; } return d; }
+
+// ===== motor do saldo devedor (cobrança semanal + proporcional + juros) =====
+function contratoInfo(m, caixa) {
+  if (!m.vinculo) return null;
+  const v = m.vinculo;
+  const valor = valSem(m);
+  const inicio = v.dataInicio || today();
+  const firstDue = v.primeiroVencimento || v.proximoVencimento || inicio;
+  const fim = (v.dataSaida && v.dataSaida < today()) ? v.dataSaida : today();
+  // cobranças (parcelas)
+  const charges = [];
+  if (firstDue <= fim) {
+    const prDays = daysBetween(inicio, firstDue);
+    if (prDays > 0) charges.push({ data: firstDue, valor: round2(valor / 7 * prDays), tipo: "prorata" });
+    else charges.push({ data: firstDue, valor: valor, tipo: "aluguel" });
+  }
+  let due = addDays(firstDue, 7), g = 0;
+  while (due <= fim && g < 520) { charges.push({ data: due, valor: valor, tipo: "aluguel" }); due = addDays(due, 7); g++; }
+  // pagamentos do contrato
+  const pays = caixa.filter((c) => c.cicloId === v.cicloId && c.pagamentoContrato).map((c) => ({ data: c.data, valor: Number(c.valor) || 0 }));
+  // eventos
+  const events = [];
+  charges.forEach((c, i) => events.push({ date: c.data, kind: "charge", i, valor: c.valor }));
+  charges.forEach((c, i) => { const jd = addDays(c.data, DIAS_JUROS); if (jd <= fim) events.push({ date: jd, kind: "juros", i }); });
+  pays.forEach((p) => events.push({ date: p.data, kind: "pay", valor: p.valor }));
+  const ord = { charge: 0, pay: 1, juros: 2 };
+  events.sort((a, b) => a.date.localeCompare(b.date) || ord[a.kind] - ord[b.kind]);
+  const open = []; let jurosTotal = 0; const jurosDone = {};
+  events.forEach((ev) => {
+    if (ev.kind === "charge") open.push({ data: ev.date, original: ev.valor, restante: ev.valor, i: ev.i, juros: false });
+    else if (ev.kind === "juros") {
+      const oc = open.find((o) => o.i === ev.i && !o.juros);
+      const rest = oc ? oc.restante : 0;
+      if (rest > 0.005 && !jurosDone[ev.i]) { const jv = round2(rest * JUROS_PCT / 100); open.push({ data: charges[ev.i].data, original: jv, restante: jv, i: "j" + ev.i, juros: true }); jurosTotal += jv; jurosDone[ev.i] = true; }
+    } else {
+      let rem = ev.valor; open.sort((a, b) => a.data.localeCompare(b.data));
+      for (const o of open) { if (rem <= 0) break; if (o.restante <= 0) continue; const use = Math.min(o.restante, rem); o.restante -= use; rem -= use; }
+    }
+  });
+  const saldo = round2(open.reduce((s, o) => s + Math.max(0, o.restante), 0));
+  const totalCobrado = round2(charges.reduce((s, c) => s + c.valor, 0) + jurosTotal);
+  const totalPago = round2(pays.reduce((s, p) => s + p.valor, 0));
+  const emAberto = open.filter((o) => o.restante > 0.005).sort((a, b) => a.data.localeCompare(b.data));
+  const maisAntigo = emAberto.length ? emAberto[0].data : null;
+  const vencido = saldo > 0.005 && maisAntigo && maisAntigo < today();
+  const atraso = vencido ? daysBetween(maisAntigo, today()) : 0;
+  const charOpen = emAberto.filter((o) => !o.juros);
+  const proximoVenc = charOpen.length ? charOpen[0].data : proxSemana(firstDue, addDays(today(), 1));
+  const jurosDe = {};
+  open.forEach((o) => { if (o.juros) jurosDe[String(o.i).slice(1)] = o; });
+  const parcelas = open.filter((o) => !o.juros).slice().sort((a, b) => a.data.localeCompare(b.data)).map((o) => {
+    const j = jurosDe[String(o.i)];
+    const baseRest = Math.max(0, o.restante);
+    const jurosRest = j ? Math.max(0, j.restante) : 0;
+    const rest = round2(baseRest + jurosRest);
+    const venc = rest > 0.005 && o.data < today();
+    return { data: o.data, original: round2(o.original + (j ? j.original : 0)), base: round2(o.original), restante: rest, juros: round2(jurosRest), paga: rest <= 0.005, vencido: venc, atraso: venc ? daysBetween(o.data, today()) : 0 };
+  });
+  return { saldo, totalCobrado, totalPago, jurosTotal, proximoVenc, atraso, vencido, parcelas };
+}
+
+function relatorioMoto(m, caixa, cicloId) {
+  const atual = cicloId !== undefined && cicloId === m.cicloAtual;
+  const lanc = caixa.filter((c) => c.motoId === m.id && (cicloId === undefined || c.cicloId === cicloId || (atual && !c.cicloId)));
+  const recebido = lanc.filter((c) => c.tipo === "entrada" && c.pagamentoContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const multaTransito = lanc.filter((c) => c.tipo === "entrada" && c.multa).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const entradaContrato = lanc.filter((c) => c.tipo === "entrada" && c.entradaContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const outras = lanc.filter((c) => c.tipo === "entrada" && !c.pagamentoContrato && !c.multa && !c.entradaContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const despesas = lanc.filter((c) => c.tipo === "saida" && !c.comissaoPaga).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const comissaoPaga = lanc.filter((c) => c.tipo === "saida" && c.comissaoPaga).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const comissaoDevida = recebido * (Number(m.taxaAdmin) || 0) / 100;
   const comissaoApagar = comissaoDevida - comissaoPaga;
-  const resultado = receitaAluguel + multas + entradaContrato + outras - despesas - comissaoDevida;
-  const nPg = lanc.filter(c=>c.aluguel).length;
-  return { receitaAluguel, multas, entradaContrato, outras, despesas, comissaoDevida, comissaoPaga, comissaoApagar, resultado, nPg };
+  const resultado = recebido + multaTransito + entradaContrato + outras - despesas - comissaoDevida;
+  const nPg = lanc.filter((c) => c.pagamentoContrato).length;
+  return { recebido, multaTransito, entradaContrato, outras, despesas, comissaoDevida, comissaoPaga, comissaoApagar, resultado, nPg };
 }
-function histMoto(m, caixa){
-  const pg = caixa.filter(c => c.moto_id===m.id && c.aluguel);
-  return { nPgTotal: pg.length, totalRecebido: pg.reduce((s,c)=>s+(Number(c.valor)||0),0) };
-}
-
-function Row({label,val,cls="text-slate-700",bold}){
-  return <div className="flex justify-between"><span className="text-slate-500">{label}</span><span className={cls+" "+(bold?"font-bold":"")}>{val}</span></div>;
-}
-function KPI({label,val,cls="text-slate-800"}){
-  return <div className="bg-white rounded-xl p-3 shadow-sm"><div className="text-xs text-slate-500">{label}</div><div className={"font-bold text-lg "+cls}>{val}</div></div>;
-}
-function PeriodoSelect({caixa,periodo,setPeriodo}){
-  const meses = Array.from(new Set(caixa.map(c=>(c.data||"").slice(0,7)).filter(Boolean))).sort().reverse();
-  return <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={periodo} onChange={e=>setPeriodo(e.target.value)}>
-    <option value="tudo">Todo o período</option>
-    {meses.map(ym=> <option key={ym} value={ym}>{mesLabel(ym)}</option>)}
-  </select>;
+function histMoto(m, caixa) {
+  const pg = caixa.filter((c) => c.motoId === m.id && c.pagamentoContrato);
+  return { nPgTotal: pg.length, totalRecebido: pg.reduce((s, c) => s + (Number(c.valor) || 0), 0) };
 }
 
-function Login({ onError }){
-  const [email,setEmail]=useState(""); const [senha,setSenha]=useState(""); const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
-  const entrar = async () => {
-    setErr(""); setBusy(true);
-    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password: senha });
-    setBusy(false);
-    if(error) setErr("E-mail ou senha incorretos.");
+function Login({ adminAuth, investidores, onCreateAdmin, onLogin }) {
+  const [u, setU] = useState(""); const [p, setP] = useState(""); const [p2, setP2] = useState(""); const [err, setErr] = useState("");
+  const creating = !adminAuth;
+  const submit = () => {
+    setErr("");
+    if (creating) { if (!u.trim() || !p) return setErr("Preencha usuário e senha."); if (p !== p2) return setErr("As senhas não conferem."); onCreateAdmin(u.trim(), p); return; }
+    if (u.trim() === adminAuth.user && p === adminAuth.senha) { onLogin({ role: "admin", nome: adminAuth.user }); return; }
+    const inv = investidores.find((i) => i.user === u.trim() && i.senha === p);
+    if (inv) { onLogin({ role: "investor", investorId: inv.id, nome: inv.nome }); return; }
+    setErr("Usuário ou senha incorretos.");
   };
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-6">
-        <div className="text-2xl font-bold text-slate-800 mb-1">🏍️ MotoGestor</div>
-        <p className="text-sm text-slate-500 mb-5">Entre com seu e-mail e senha.</p>
+    <div className="min-h-screen flex items-center justify-center bg-black p-4">
+      <div className="bg-neutral-900 border border-green-500/30 rounded-2xl shadow-2xl w-full max-w-sm p-7">
+        <div className="flex items-center justify-center gap-2 mb-1"><Bike className="w-8 h-8 text-green-500" /><h1 className="text-2xl font-extrabold text-white">Moto<span className="text-green-500">Vibe</span></h1></div>
+        <p className="text-center text-xs tracking-[0.3em] text-green-500/80 mb-4">S Y S T E M</p>
+        <p className="text-sm text-neutral-400 mb-5 text-center">{creating ? "Crie o acesso de administrador." : "Acesso de administrador ou investidor."}</p>
         <div className="space-y-3">
-          <input className="w-full border rounded-lg px-3 py-2" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} />
-          <input type="password" className="w-full border rounded-lg px-3 py-2" placeholder="Senha" value={senha} onChange={e=>setSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&entrar()} />
-          {err && <p className="text-sm text-red-600">{err}</p>}
-          <button onClick={entrar} disabled={busy} className="w-full bg-slate-800 text-white rounded-lg py-2 font-medium">{busy?"Entrando...":"Entrar"}</button>
+          <input className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-2 placeholder-neutral-500 focus:border-green-500 outline-none" placeholder="Usuário" value={u} onChange={(e) => setU(e.target.value)} />
+          <input type="password" className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-2 placeholder-neutral-500 focus:border-green-500 outline-none" placeholder="Senha" value={p} onChange={(e) => setP(e.target.value)} />
+          {creating && <input type="password" className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-2 placeholder-neutral-500 focus:border-green-500 outline-none" placeholder="Confirmar senha" value={p2} onChange={(e) => setP2(e.target.value)} />}
+          {err && <p className="text-sm text-red-400">{err}</p>}
+          <button onClick={submit} className="w-full bg-green-500 hover:bg-green-400 text-black rounded-lg py-2.5 font-bold transition-colors">{creating ? "Criar administrador" : "Entrar"}</button>
         </div>
+        <p className="text-[11px] text-neutral-500 mt-5 text-center">Moto Vibe - System</p>
       </div>
     </div>
   );
 }
 
-function MotoForm({ initial, investidores, onSave, onCancel }){
-  const [f,setF]=useState(initial ? {...initial} : { modelo:"",placa:"",ano:"",valor:"",valor_entrada:"",taxa_admin:"",status:"disponivel",proprietario_id:"" });
-  const set=(k,v)=>setF(s=>({...s,[k]:v}));
-  const semanal=Number(f.valor)||0; const mensal=semanal*SEMANAS_MES; const comissao=semanal*(Number(f.taxa_admin)||0)/100;
+function MotoForm({ initial, investidores, onSave, onCancel }) {
+  const [f, setF] = useState(initial ? { ...initial, valor: valSem(initial), valorEntrada: motoEntrada(initial), proprietarioId: initial.proprietarioId || "" } : { modelo: "", placa: "", ano: "", valor: "", valorEntrada: "", taxaAdmin: "", status: "disponivel", proprietarioId: "" });
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   return (
     <div className="bg-slate-50 border rounded-xl p-4 space-y-3">
       <div className="grid grid-cols-2 gap-2">
-        <input className="border rounded-lg px-3 py-2 col-span-2" placeholder="Modelo (ex: Honda CG 160)" value={f.modelo} onChange={e=>set("modelo",e.target.value)} />
-        <input className="border rounded-lg px-3 py-2" placeholder="Placa" value={f.placa||""} onChange={e=>set("placa",e.target.value)} />
-        <input className="border rounded-lg px-3 py-2" placeholder="Ano" value={f.ano||""} onChange={e=>set("ano",e.target.value)} />
-        <div><label className="text-xs text-slate-500">Aluguel semanal (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={f.valor||""} onChange={e=>set("valor",e.target.value)} /></div>
-        <div><label className="text-xs text-slate-500">Valor da entrada (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={f.valor_entrada||""} onChange={e=>set("valor_entrada",e.target.value)} /></div>
-        <div className="col-span-2"><label className="text-xs text-slate-500">Comissão do gestor (%)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={f.taxa_admin||""} onChange={e=>set("taxa_admin",e.target.value)} /></div>
+        <input className="border rounded-lg px-3 py-2 col-span-2" placeholder="Modelo (ex: Honda CG 160)" value={f.modelo} onChange={(e) => set("modelo", e.target.value)} />
+        <input className="border rounded-lg px-3 py-2" placeholder="Placa" value={f.placa} onChange={(e) => set("placa", e.target.value)} />
+        <input className="border rounded-lg px-3 py-2" placeholder="Ano" value={f.ano} onChange={(e) => set("ano", e.target.value)} />
+        <div><label className="text-xs text-slate-500">Valor semanal do aluguel (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0,00" value={f.valor} onChange={(e) => set("valor", e.target.value)} /></div>
+        <div><label className="text-xs text-slate-500">Valor da entrada (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0,00" value={f.valorEntrada} onChange={(e) => set("valorEntrada", e.target.value)} /></div>
+        <div className="col-span-2"><label className="text-xs text-slate-500">Comissão do gestor (%)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0" value={f.taxaAdmin} onChange={(e) => set("taxaAdmin", e.target.value)} /></div>
         <div className="col-span-2"><label className="text-xs text-slate-500">Pertence a (investidor)</label>
-          <select className="border rounded-lg px-3 py-2 w-full" value={f.proprietario_id||""} onChange={e=>set("proprietario_id",e.target.value)}>
-            <option value="">Próprio (meu)</option>
-            {investidores.map(i=> <option key={i.id} value={i.id}>{i.nome}</option>)}
+          <select className="border rounded-lg px-3 py-2 w-full" value={f.proprietarioId} onChange={(e) => set("proprietarioId", e.target.value)}>
+            <option value="">Próprio (meu)</option>{investidores.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
           </select>
         </div>
-        <select className="border rounded-lg px-3 py-2 col-span-2" value={f.status} onChange={e=>set("status",e.target.value)}>
-          {Object.entries(STATUS).map(([k,v])=> <option key={k} value={k}>{v.label}</option>)}
+        <select className="border rounded-lg px-3 py-2 col-span-2" value={f.status} onChange={(e) => set("status", e.target.value)}>
+          {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
       </div>
-      {semanal>0 && <div className="text-xs bg-white border rounded-lg p-2 text-slate-600 space-y-1">
-        <div className="flex justify-between"><span>Equivalente mensal (≈{SEMANAS_MES} sem.):</span><b>{brl(mensal)}</b></div>
-        <div className="flex justify-between"><span>Comissão por semana:</span><b>{brl(comissao)}</b></div>
-      </div>}
+      <p className="text-[11px] text-slate-400">A cobrança é semanal. O saldo do contrato soma R$ {Number(f.valor) || 0} a cada semana, com a 1ª semana proporcional e juros de {JUROS_PCT}% após {DIAS_JUROS} dias de atraso.</p>
       <div className="flex gap-2">
-        <button onClick={()=> f.modelo.trim() && onSave(f)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button>
+        <button onClick={() => f.modelo.trim() && onSave({ ...f, valor: Number(f.valor) || 0, valorEntrada: Number(f.valorEntrada) || 0 })} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button>
         <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
       </div>
     </div>
   );
 }
 
-function LocForm({ initial, onSave, onCancel }){
-  const [f,setF]=useState(initial || { nome:"",telefone:"",documento:"",obs:"" });
-  const set=(k,v)=>setF(s=>({...s,[k]:v}));
+function LocForm({ initial, onSave, onCancel }) {
+  const [f, setF] = useState(initial || { nome: "", telefone: "", documento: "", obs: "" });
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   return (
     <div className="bg-slate-50 border rounded-xl p-4 space-y-2">
-      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nome" value={f.nome} onChange={e=>set("nome",e.target.value)} />
-      <div className="grid grid-cols-2 gap-2">
-        <input className="border rounded-lg px-3 py-2" placeholder="Telefone" value={f.telefone||""} onChange={e=>set("telefone",e.target.value)} />
-        <input className="border rounded-lg px-3 py-2" placeholder="CPF / Documento" value={f.documento||""} onChange={e=>set("documento",e.target.value)} />
-      </div>
-      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Observações" value={f.obs||""} onChange={e=>set("obs",e.target.value)} />
-      <div className="flex gap-2">
-        <button onClick={()=> f.nome.trim() && onSave(f)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button>
-        <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
-      </div>
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nome" value={f.nome} onChange={(e) => set("nome", e.target.value)} />
+      <div className="grid grid-cols-2 gap-2"><input className="border rounded-lg px-3 py-2" placeholder="Telefone" value={f.telefone} onChange={(e) => set("telefone", e.target.value)} /><input className="border rounded-lg px-3 py-2" placeholder="CPF / Documento" value={f.documento} onChange={(e) => set("documento", e.target.value)} /></div>
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Observações" value={f.obs} onChange={(e) => set("obs", e.target.value)} />
+      <div className="flex gap-2"><button onClick={() => f.nome.trim() && onSave(f)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button><button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div>
     </div>
   );
 }
 
-function VincForm({ mode, list, onSave, onCancel }){
-  const [sel,setSel]=useState(""); const [venc,setVenc]=useState(addDays(today(),7));
-  const [lancar,setLancar]=useState(true); const [entradaVal,setEntradaVal]=useState("");
-  const selItem = list.find(x=>x.id===sel); const entrada = selItem ? (selItem.entrada||0) : 0;
-  useEffect(()=>{ setEntradaVal(entrada>0?String(entrada):""); },[sel]);
+function VincForm({ mode, list, valorSem, onSave, onCancel }) {
+  const [sel, setSel] = useState(""); const [venc, setVenc] = useState(addDays(today(), 7));
+  const [lancar, setLancar] = useState(true); const [entradaVal, setEntradaVal] = useState("");
+  const selItem = list.find((x) => x.id === sel); const entrada = selItem ? (selItem.entrada || 0) : 0;
+  const prDays = daysBetween(today(), venc);
+  const semanaRef = selItem && selItem.valorSem != null ? selItem.valorSem : (valorSem || 0);
+  const prValor = prDays > 0 && prDays < 7 ? round2(semanaRef / 7 * prDays) : semanaRef;
+  useEffect(() => { setEntradaVal(entrada > 0 ? String(entrada) : ""); }, [sel]);
   return (
     <div className="mt-2 bg-slate-50 border rounded-lg p-3 space-y-2">
-      {list.length===0 ? <p className="text-sm text-slate-500">{mode==="fromMoto"?"Cadastre um locatário primeiro.":"Nenhuma moto disponível."}</p> : <>
-        <select className="border rounded-lg px-3 py-2 w-full text-sm" value={sel} onChange={e=>setSel(e.target.value)}>
-          <option value="">{mode==="fromMoto"?"Selecione o locatário":"Selecione a moto"}</option>
-          {list.map(x=> <option key={x.id} value={x.id}>{x.label}</option>)}
+      {list.length === 0 ? <p className="text-sm text-slate-500">{mode === "fromMoto" ? "Cadastre um locatário primeiro." : "Nenhuma moto disponível."}</p> : <>
+        <select className="border rounded-lg px-3 py-2 w-full text-sm" value={sel} onChange={(e) => setSel(e.target.value)}>
+          <option value="">{mode === "fromMoto" ? "Selecione o locatário" : "Selecione a moto"}</option>
+          {list.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
         </select>
         <label className="text-xs text-slate-500 block">Data do 1º vencimento</label>
-        <input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={venc} onChange={e=>setVenc(e.target.value)} />
-        {entrada>0 && <div className="space-y-1">
-          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={lancar} onChange={e=>setLancar(e.target.checked)} />Lançar entrada (cadastrada: {brl(entrada)})</label>
-          {lancar && <div><label className="text-xs text-slate-500">Valor recebido (pode ser parcial)</label><input type="number" className="border rounded-lg px-3 py-2 w-full text-sm" value={entradaVal} onChange={e=>setEntradaVal(e.target.value)} /></div>}
+        <input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={venc} onChange={(e) => setVenc(e.target.value)} />
+        {semanaRef > 0 && <p className="text-[11px] text-slate-500">1ª cobrança ({prDays > 0 && prDays < 7 ? `proporcional, ${prDays} dia(s)` : "semana cheia"}): <b>{brl(prValor)}</b></p>}
+        {entrada > 0 && <div className="space-y-1">
+          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={lancar} onChange={(e) => setLancar(e.target.checked)} />Lançar entrada (cadastrada: {brl(entrada)})</label>
+          {lancar && <div><label className="text-xs text-slate-500">Valor recebido (pode ser parcial)</label><input type="number" className="border rounded-lg px-3 py-2 w-full text-sm" value={entradaVal} onChange={(e) => setEntradaVal(e.target.value)} /></div>}
         </div>}
-        <div className="flex gap-2">
-          <button onClick={()=> sel && onSave(sel, venc, entrada>0&&lancar?(Number(entradaVal)||0):0)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm">Vincular</button>
-          <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
-        </div>
+        <div className="flex gap-2"><button onClick={() => sel && onSave(sel, venc, entrada > 0 && lancar ? (Number(entradaVal) || 0) : 0)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm">Vincular</button><button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div>
       </>}
     </div>
   );
 }
 
-function PagamentoForm({ moto, onSave, onCancel }){
-  const [aluguel,setAluguel]=useState(String(motoValor(moto)));
-  const [multa,setMulta]=useState(""); const [despesas,setDespesas]=useState([]);
-  const [dVal,setDVal]=useState(""); const [dDesc,setDDesc]=useState(""); const [data,setData]=useState(today());
-  const pct=Number(moto.taxa_admin)||0; const comissao=(Number(aluguel)||0)*pct/100;
-  const totalDesp=despesas.reduce((s,d)=>s+(Number(d.valor)||0),0);
-  const liquido=(Number(aluguel)||0)-comissao+(Number(multa)||0)-totalDesp;
-  const addDespesa=()=>{ const v=Number(dVal)||0; if(v<=0) return; setDespesas(s=>[...s,{valor:v,descricao:dDesc.trim()}]); setDVal(""); setDDesc(""); };
+function PagamentoForm({ moto, saldo, parcelas, onSave, onCancel }) {
+  const [valor, setValor] = useState(saldo > 0 ? String(saldo.toFixed(2)) : "");
+  const [multaTransito, setMultaTransito] = useState("");
+  const [despesas, setDespesas] = useState([]);
+  const [dVal, setDVal] = useState(""); const [dDesc, setDDesc] = useState(""); const [data, setData] = useState(today());
+  const pct = Number(moto.taxaAdmin) || 0;
+  const comissao = (Number(valor) || 0) * pct / 100;
+  const totalDesp = despesas.reduce((s, d) => s + (Number(d.valor) || 0), 0);
+  const addDespesa = () => { const v = Number(dVal) || 0; if (v <= 0) return; setDespesas((s) => [...s, { valor: v, descricao: dDesc.trim() }]); setDVal(""); setDDesc(""); };
   return (
     <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-      <div><label className="text-xs text-slate-600">Aluguel recebido (entra na comissão)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={aluguel} onChange={e=>setAluguel(e.target.value)} /></div>
-      <div><label className="text-xs text-slate-600">Multa / juros (não entra na comissão)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={multa} onChange={e=>setMulta(e.target.value)} /></div>
+      <div className="text-xs text-slate-600">Saldo devedor atual: <b>{brl(saldo)}</b></div>
+      {parcelas && parcelas.some((p) => !p.paga) && <div className="bg-white border border-green-200 rounded-lg p-2 space-y-1">
+        <div className="text-[11px] font-medium text-slate-500">Vencimentos em aberto</div>
+        {parcelas.filter((p) => !p.paga).map((p, i) => <div key={i} className="flex justify-between text-xs"><span className={p.vencido ? "text-red-600" : "text-slate-600"}>Semana {fmtDate(p.data)}{p.vencido ? ` · ${p.atraso}d em atraso` : " · a vencer"}{p.juros > 0.005 ? ` · inclui ${brl(p.juros)} juros` : ""}</span><b className={p.vencido ? "text-red-600" : "text-slate-700"}>{brl(p.restante)}</b></div>)}
+      </div>}
+      <div><label className="text-xs text-slate-600">Valor pago (abate o saldo)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+      <div><label className="text-xs text-slate-600">Multa de trânsito (não entra na comissão)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0,00" value={multaTransito} onChange={(e) => setMultaTransito(e.target.value)} /></div>
       <div className="border-t border-green-200 pt-2">
         <label className="text-xs text-slate-600">Despesas da moto (cada uma vira uma saída)</label>
-        {despesas.map((d,i)=> <div key={i} className="flex items-center justify-between bg-white border rounded-lg px-3 py-1.5 mt-1 text-sm"><span className="truncate">{d.descricao||"Despesa"} · <b className="text-red-500">{brl(d.valor)}</b></span><button onClick={()=>setDespesas(s=>s.filter((_,j)=>j!==i))} className="text-slate-300 ml-2">✕</button></div>)}
-        <div className="grid grid-cols-2 gap-2 mt-1">
-          <input type="number" className="border rounded-lg px-3 py-2 text-sm" placeholder="Valor (R$)" value={dVal} onChange={e=>setDVal(e.target.value)} />
-          <input className="border rounded-lg px-3 py-2 text-sm" placeholder="Descrição" value={dDesc} onChange={e=>setDDesc(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addDespesa()} />
-        </div>
-        <button onClick={addDespesa} className="w-full mt-1 text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5">+ Adicionar despesa</button>
-        {totalDesp>0 && <div className="text-xs text-slate-500 mt-1 text-right">Total despesas: <b className="text-red-500">{brl(totalDesp)}</b></div>}
+        {despesas.map((d, i) => <div key={i} className="flex items-center justify-between bg-white border rounded-lg px-3 py-1.5 mt-1 text-sm"><span className="truncate">{d.descricao || "Despesa"} · <b className="text-red-500">{brl(d.valor)}</b></span><button onClick={() => setDespesas((s) => s.filter((_, j) => j !== i))} className="text-slate-300 ml-2"><X className="w-4 h-4" /></button></div>)}
+        <div className="grid grid-cols-2 gap-2 mt-1"><input type="number" className="border rounded-lg px-3 py-2 text-sm" placeholder="Valor (R$)" value={dVal} onChange={(e) => setDVal(e.target.value)} /><input className="border rounded-lg px-3 py-2 text-sm" placeholder="Descrição" value={dDesc} onChange={(e) => setDDesc(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addDespesa()} /></div>
+        <button onClick={addDespesa} className="w-full mt-1 text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Adicionar despesa</button>
       </div>
-      <div><label className="text-xs text-slate-600">Data</label><input type="date" className="border rounded-lg px-3 py-2 w-full" value={data} onChange={e=>setData(e.target.value)} /></div>
-      <div className="text-xs bg-white border rounded-lg p-2 text-slate-600 flex justify-between"><span>Comissão ({pct}%): <b>{brl(comissao)}</b></span><span>Resultado: <b>{brl(liquido)}</b></span></div>
-      <div className="flex gap-2">
-        <button onClick={()=>onSave(Number(aluguel)||0, Number(multa)||0, despesas, data)} className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium">Confirmar</button>
-        <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
-      </div>
+      <div><label className="text-xs text-slate-600">Data</label><input type="date" className="border rounded-lg px-3 py-2 w-full" value={data} onChange={(e) => setData(e.target.value)} /></div>
+      <div className="text-xs bg-white border rounded-lg p-2 text-slate-600 flex justify-between"><span>Comissão ({pct}%): <b>{brl(comissao)}</b></span><span>Novo saldo: <b>{brl(Math.max(0, saldo - (Number(valor) || 0)))}</b></span></div>
+      <div className="flex gap-2"><button onClick={() => onSave(Number(valor) || 0, Number(multaTransito) || 0, despesas, data)} className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium">Confirmar</button><button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div>
     </div>
   );
 }
 
-function RelatorioCard({ m, caixa, historico, onPagarComissao }){
-  const r = relatorioMoto(m, caixa, m.ciclo_atual);
-  const [pagando,setPagando]=useState(false); const [val,setVal]=useState(""); const [dt,setDt]=useState(today());
+function RelatorioCard({ m, caixa, historico, saldo, onPagarComissao }) {
+  const r = relatorioMoto(m, caixa, m.cicloAtual);
+  const [pagando, setPagando] = useState(false); const [val, setVal] = useState(""); const [dt, setDt] = useState(today());
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm">
       <div className="font-semibold">{m.modelo} · {m.placa}</div>
-      {historico && historico.nPgTotal>0 && <div className="text-xs text-slate-400 mb-1">Esta moto já recebeu {historico.nPgTotal} pagamento(s) no total · {brl(historico.totalRecebido)} (todos os locatários)</div>}
-      {m.ciclo_atual && <div className="text-[11px] text-blue-500 mb-2">Valores abaixo: contrato atual</div>}
+      {historico && historico.nPgTotal > 0 && <div className="text-xs text-slate-400 mb-1">Já recebeu {historico.nPgTotal} pagamento(s) no total · {brl(historico.totalRecebido)} (todos os locatários)</div>}
+      {m.cicloAtual && <div className="text-[11px] text-blue-500 mb-2">Valores: contrato atual</div>}
       <div className="space-y-1 text-sm">
-        <Row label={"Aluguel recebido ("+r.nPg+" pgto)"} val={brl(r.receitaAluguel)} cls="text-green-600" />
-        <Row label="Multas / juros recebidos" val={brl(r.multas)} cls="text-green-600" />
-        {r.entradaContrato>0 && <Row label="Entrada de contrato" val={brl(r.entradaContrato)} cls="text-green-600" />}
-        {r.outras>0 && <Row label="Outras entradas" val={brl(r.outras)} cls="text-green-600" />}
-        {r.despesas>0 && <Row label="Despesas (saídas)" val={"− "+brl(r.despesas)} cls="text-red-500" />}
-        <div className="border-t my-1"></div>
-        <Row label={"Comissão devida ("+(m.taxa_admin||0)+"%)"} val={brl(r.comissaoDevida)} cls="text-amber-600" />
+        {saldo != null && <Row label="Saldo devedor (em aberto)" val={brl(saldo)} cls={saldo > 0.005 ? "text-red-600" : "text-green-600"} bold />}
+        <Row label={`Recebido do contrato (${r.nPg} pgto)`} val={brl(r.recebido)} cls="text-green-600" />
+        <Row label="Multa de trânsito" val={brl(r.multaTransito)} cls="text-green-600" />
+        {r.entradaContrato > 0 && <Row label="Entrada de contrato" val={brl(r.entradaContrato)} cls="text-green-600" />}
+        {r.outras > 0 && <Row label="Outras entradas" val={brl(r.outras)} cls="text-green-600" />}
+        {r.despesas > 0 && <Row label="Despesas (saídas)" val={`− ${brl(r.despesas)}`} cls="text-red-500" />}
+        <div className="border-t my-1" />
+        <Row label={`Comissão devida (${m.taxaAdmin || 0}% do recebido)`} val={brl(r.comissaoDevida)} cls="text-amber-600" />
         <Row label="Comissão já paga" val={brl(r.comissaoPaga)} cls="text-slate-500" />
-        <Row label="Comissão a pagar" val={brl(r.comissaoApagar)} cls={r.comissaoApagar>0.005?"text-amber-700":"text-green-600"} bold />
-        <div className="border-t my-1"></div>
-        <Row label="Resultado para você" val={brl(r.resultado)} bold cls={r.resultado>=0?"text-green-600":"text-red-500"} />
+        <Row label="Comissão a pagar" val={brl(r.comissaoApagar)} cls={r.comissaoApagar > 0.005 ? "text-amber-700" : "text-green-600"} bold />
+        <div className="border-t my-1" />
+        <Row label="Resultado para você" val={brl(r.resultado)} bold cls={r.resultado >= 0 ? "text-green-600" : "text-red-500"} />
       </div>
       {onPagarComissao && (pagando ? (
         <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
           <label className="text-xs text-slate-600 block">Valor pago ao gestor</label>
-          <input type="number" className="border rounded-lg px-3 py-2 w-full text-sm" value={val} onChange={e=>setVal(e.target.value)} />
-          <input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={dt} onChange={e=>setDt(e.target.value)} />
-          <div className="flex gap-2">
-            <button onClick={()=>{ const v=Number(val)||r.comissaoApagar; if(v>0){ onPagarComissao(m,v,dt); setPagando(false); setVal(""); } }} className="flex-1 bg-amber-600 text-white rounded-lg py-2 text-sm">Confirmar</button>
-            <button onClick={()=>setPagando(false)} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
-          </div>
+          <input type="number" className="border rounded-lg px-3 py-2 w-full text-sm" value={val} onChange={(e) => setVal(e.target.value)} />
+          <input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={dt} onChange={(e) => setDt(e.target.value)} />
+          <div className="flex gap-2"><button onClick={() => { const v = Number(val) || r.comissaoApagar; if (v > 0) { onPagarComissao(m, v, dt); setPagando(false); setVal(""); } }} className="flex-1 bg-amber-600 text-white rounded-lg py-2 text-sm">Confirmar</button><button onClick={() => setPagando(false)} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div>
         </div>
-      ) : ( r.comissaoApagar>0.005 && <button onClick={()=>{ setPagando(true); setVal(String(r.comissaoApagar.toFixed(2))); }} className="mt-3 w-full text-sm border border-amber-300 text-amber-700 rounded-lg py-1.5">Registrar pagamento de comissão</button> ))}
+      ) : (r.comissaoApagar > 0.005 && <button onClick={() => { setPagando(true); setVal(String(r.comissaoApagar.toFixed(2))); }} className="mt-3 w-full text-sm border border-amber-300 text-amber-700 rounded-lg py-1.5">Registrar pagamento de comissão</button>))}
     </div>
   );
 }
 
-function App(){
-  const [loading,setLoading]=useState(true);
-  const [session,setSession]=useState(null);
-  const [profile,setProfile]=useState(null);
-  const [tab,setTab]=useState("dash");
-  const [data,setData]=useState({ motos:[],locatarios:[],caixa:[],investidores:[] });
-  const [periodo,setPeriodo]=useState("tudo");
-  const [filtroVenc,setFiltroVenc]=useState(""); const [filtroRel,setFiltroRel]=useState("");
-  const [addMoto,setAddMoto]=useState(false); const [editMoto,setEditMoto]=useState(null);
-  const [addLoc,setAddLoc]=useState(false); const [editLoc,setEditLoc]=useState(null);
-  const [vincMoto,setVincMoto]=useState(null); const [vincLoc,setVincLoc]=useState(null); const [payMoto,setPayMoto]=useState(null);
+function Row({ label, val, cls = "text-slate-700", bold }) {
+  return <div className="flex justify-between"><span className="text-slate-500">{label}</span><span className={`${cls} ${bold ? "font-bold" : ""}`}>{val}</span></div>;
+}
+function KPI({ label, val, cls = "text-slate-800" }) {
+  return <div className="bg-white rounded-xl p-3 shadow-sm"><div className="text-xs text-slate-500">{label}</div><div className={`font-bold text-lg ${cls}`}>{val}</div></div>;
+}
+function PeriodoSelect({ caixa, periodo, setPeriodo }) {
+  const meses = Array.from(new Set(caixa.map((c) => (c.data || "").slice(0, 7)).filter(Boolean))).sort().reverse();
+  return <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={periodo} onChange={(e) => setPeriodo(e.target.value)}><option value="tudo">Todo o período</option>{meses.map((ym) => <option key={ym} value={ym}>{mesLabel(ym)}</option>)}</select>;
+}
 
-  const loadData = async (role) => {
-    const motos = await sb.from("motos").select("*").order("created_at",{ascending:true});
-    const caixa = await sb.from("caixa").select("*").order("data",{ascending:false});
-    let locatarios={data:[]}, investidores={data:[]};
-    if(role==="admin"){
-      locatarios = await sb.from("locatarios").select("*").order("created_at",{ascending:true});
-      investidores = await sb.from("profiles").select("*").eq("role","investidor");
-    }
-    setData({ motos:motos.data||[], caixa:caixa.data||[], locatarios:locatarios.data||[], investidores:investidores.data||[] });
-  };
-  const reload = () => loadData(profile?.role);
+function App() {
+  const [loaded, setLoaded] = useState(false);
+  const [adminAuth, setAdminAuth] = useState(null);
+  const [session, setSession] = useState(null);
+  const [tab, setTab] = useState("dash");
+  const [data, setData] = useState({ motos: [], locatarios: [], caixa: [], investidores: [], historico: [] });
+  const [periodo, setPeriodo] = useState("tudo");
+  const [filtroVenc, setFiltroVenc] = useState(""); const [filtroRel, setFiltroRel] = useState("");
+  const [relModo, setRelModo] = useState("placa"); const [filtroLoc, setFiltroLoc] = useState("");
+  const firstSave = useRef(true);
 
-  const handleSession = async (s) => {
-    if(!s){ setSession(null); setProfile(null); setLoading(false); return; }
-    setSession(s);
-    const { data: prof } = await sb.from("profiles").select("*").eq("id", s.user.id).single();
-    setProfile(prof);
-    await loadData(prof ? prof.role : "investidor");
-    setLoading(false);
-  };
+  useEffect(() => { (async () => {
+    try { const a = await window.storage.get("auth"); if (a) setAdminAuth(JSON.parse(a.value)); } catch (e) {}
+    try { const d = await window.storage.get("app-data"); if (d) { const p = JSON.parse(d.value); setData({ motos: [], locatarios: [], caixa: [], investidores: [], historico: [], ...p }); } } catch (e) {}
+    setLoaded(true);
+  })(); }, []);
+  useEffect(() => { if (!loaded) return; if (firstSave.current) { firstSave.current = false; return; } (async () => { try { await window.storage.set("app-data", JSON.stringify(data)); } catch (e) {} })(); }, [data, loaded]);
 
-  useEffect(()=>{
-    if(!sb) { setLoading(false); return; }
-    sb.auth.getSession().then(({data})=> handleSession(data.session));
-    const { data: sub } = sb.auth.onAuthStateChange((_e,s)=> handleSession(s));
-    return ()=> sub.subscription.unsubscribe();
-  },[]);
+  const createAdmin = async (user, senha) => { const a = { user, senha }; setAdminAuth(a); setSession({ role: "admin", nome: user }); try { await window.storage.set("auth", JSON.stringify(a)); } catch (e) {} };
+  const upd = (key, fn) => setData((s) => ({ ...s, [key]: fn(s[key] || []) }));
 
-  if(!sb){
-    return <div className="min-h-screen flex items-center justify-center p-6 text-center text-slate-600">
-      <div><div className="text-2xl mb-2">⚙️</div>Cole o <b>Project URL</b> e a <b>chave</b> no topo do arquivo (linhas marcadas) e salve. Depois recarregue.</div>
-    </div>;
-  }
-  if(loading) return <div className="min-h-screen flex items-center justify-center text-slate-400">Carregando…</div>;
-  if(!session) return <Login />;
+  const [editMoto, setEditMoto] = useState(null); const [addMoto, setAddMoto] = useState(false);
+  const [editLoc, setEditLoc] = useState(null); const [addLoc, setAddLoc] = useState(false);
+  const [vincMoto, setVincMoto] = useState(null); const [vincLoc, setVincLoc] = useState(null); const [payMoto, setPayMoto] = useState(null);
+  const [saindo, setSaindo] = useState(null); const [dataSaida, setDataSaida] = useState(today());
 
-  const isAdmin = profile && profile.role==="admin";
-  const caixaFiltrado = periodo==="tudo" ? data.caixa : data.caixa.filter(c=>(c.data||"").startsWith(periodo));
-  const locName = (id) => { const l=data.locatarios.find(x=>x.id===id); return l?l.nome:"—"; };
-  const invName = (id) => { const i=data.investidores.find(x=>x.id===id); return i?i.nome:"—"; };
-  const motoDoLoc = (lid) => data.motos.find(m=> m.vinculo && m.vinculo.locatarioId===lid);
-  const motosDisponiveis = data.motos.filter(m=> !m.vinculo);
-
-  // ---- ações (admin) ----
-  const saveMoto = async (f) => {
-    const payload = { modelo:f.modelo, placa:f.placa, ano:f.ano, valor:Number(f.valor)||0, valor_entrada:Number(f.valor_entrada)||0, taxa_admin:Number(f.taxa_admin)||0, status:f.status, proprietario_id:f.proprietario_id||null };
-    const res = f.id ? await sb.from("motos").update(payload).eq("id",f.id) : await sb.from("motos").insert(payload);
-    if(res.error) return alert("Erro ao salvar moto: "+res.error.message);
-    setAddMoto(false); setEditMoto(null); reload();
-  };
-  const delMoto = async (id) => { if(!confirm("Excluir esta moto?")) return; const res=await sb.from("motos").delete().eq("id",id); if(res.error) return alert(res.error.message); reload(); };
-  const saveLoc = async (f) => {
-    const payload = { nome:f.nome, telefone:f.telefone, documento:f.documento, obs:f.obs };
-    const res = f.id ? await sb.from("locatarios").update(payload).eq("id",f.id) : await sb.from("locatarios").insert(payload);
-    if(res.error) return alert("Erro: "+res.error.message);
-    setAddLoc(false); setEditLoc(null); reload();
-  };
-  const delLoc = async (id) => {
-    if(!confirm("Excluir este locatário?")) return;
-    const afetadas = data.motos.filter(m=> m.vinculo && m.vinculo.locatarioId===id);
-    for(const m of afetadas){ await sb.from("motos").update({ vinculo:null, status:"disponivel" }).eq("id",m.id); }
-    const res = await sb.from("locatarios").delete().eq("id",id);
-    if(res.error) return alert(res.error.message);
-    reload();
-  };
-  const criarVinculo = async (motoId, locatarioId, locatarioNome, dataVenc, entradaVal) => {
+  const saveMoto = (f) => { if (f.id) upd("motos", (m) => m.map((x) => x.id === f.id ? { ...x, ...f } : x)); else upd("motos", (m) => [...m, { ...f, id: uid(), vinculo: null }]); setEditMoto(null); setAddMoto(false); };
+  const delMoto = (id) => { upd("motos", (m) => m.filter((x) => x.id !== id)); upd("caixa", (c) => c.map((x) => x.motoId === id ? { ...x, motoId: null } : x)); };
+  const saveLoc = (f) => { if (f.id) upd("locatarios", (l) => l.map((x) => x.id === f.id ? { ...x, ...f } : x)); else upd("locatarios", (l) => [...l, { ...f, id: uid() }]); setEditLoc(null); setAddLoc(false); };
+  const delLoc = (id) => { upd("locatarios", (l) => l.filter((x) => x.id !== id)); upd("motos", (m) => m.map((x) => x.vinculo?.locatarioId === id ? { ...x, vinculo: null, status: "disponivel" } : x)); };
+  const criarVinculo = (motoId, locatarioId, primeiroVenc, entradaVal) => {
     const ciclo = uid();
-    const vinculo = { locatarioId, locatarioNome, dataInicio:today(), proximoVencimento:dataVenc, cicloId:ciclo };
-    const r1 = await sb.from("motos").update({ status:"alugada", ciclo_atual:ciclo, vinculo }).eq("id",motoId);
-    if(r1.error) return alert(r1.error.message);
-    if(entradaVal>0) await sb.from("caixa").insert({ tipo:"entrada", entrada_contrato:true, valor:entradaVal, descricao:"Entrada de contrato "+locatarioNome, moto_id:motoId, data:today(), ciclo_id:ciclo });
-    setVincMoto(null); setVincLoc(null); reload();
+    upd("motos", (ms) => ms.map((x) => x.id === motoId ? { ...x, status: "alugada", cicloAtual: ciclo, vinculo: { locatarioId, dataInicio: today(), primeiroVencimento: primeiroVenc, cicloId: ciclo } } : x));
+    if (entradaVal > 0) { const loc = data.locatarios.find((l) => l.id === locatarioId); upd("caixa", (c) => [{ id: uid(), tipo: "entrada", entradaContrato: true, valor: entradaVal, descricao: `Entrada de contrato ${loc?.nome || ""}`, motoId, data: today(), cicloId: ciclo }, ...c]); }
   };
-  const desvincular = async (motoId) => { const res=await sb.from("motos").update({ vinculo:null, status:"disponivel" }).eq("id",motoId); if(res.error) return alert(res.error.message); reload(); };
-  const registrarPagamento = async (m, aluguelVal, multaVal, despesas, dataPg) => {
-    const ciclo = m.vinculo.cicloId; const nome=m.vinculo.locatarioNome||""; const rows=[];
-    if(aluguelVal>0) rows.push({ tipo:"entrada", aluguel:true, valor:aluguelVal, descricao:"Aluguel "+nome, moto_id:m.id, data:dataPg, ciclo_id:ciclo });
-    if(multaVal>0) rows.push({ tipo:"entrada", multa:true, valor:multaVal, descricao:"Multa/juros "+nome, moto_id:m.id, data:dataPg, ciclo_id:ciclo });
-    (despesas||[]).forEach(d=>{ const v=Number(d.valor)||0; if(v>0) rows.push({ tipo:"saida", valor:v, descricao:d.descricao||("Despesa "+m.modelo), moto_id:m.id, data:dataPg, ciclo_id:ciclo }); });
-    if(rows.length){ const res=await sb.from("caixa").insert(rows); if(res.error) return alert(res.error.message); }
-    const base = m.vinculo.proximoVencimento < today() ? today() : m.vinculo.proximoVencimento;
-    await sb.from("motos").update({ vinculo:{ ...m.vinculo, proximoVencimento:addDays(base,7) } }).eq("id",m.id);
-    setPayMoto(null); reload();
+  const encerrarContrato = (motoId, dtSaida) => {
+    const m = data.motos.find((x) => x.id === motoId);
+    if (m?.vinculo) upd("historico", (h) => [{ id: uid(), motoId, locatarioId: m.vinculo.locatarioId, locatarioNome: data.locatarios.find((l) => l.id === m.vinculo.locatarioId)?.nome || "", cicloId: m.vinculo.cicloId, dataInicio: m.vinculo.dataInicio, dataSaida: dtSaida }, ...h]);
+    upd("motos", (ms) => ms.map((x) => x.id === motoId ? { ...x, vinculo: null, status: "disponivel" } : x));
+    setSaindo(null);
   };
-  const pagarComissao = async (m, valor, dt) => { const res=await sb.from("caixa").insert({ tipo:"saida", comissao_paga:true, valor, descricao:"Comissão gestor — "+m.modelo+" "+m.placa, moto_id:m.id, data:dt }); if(res.error) return alert(res.error.message); reload(); };
+  const pagarComissao = (m, valor, dt) => upd("caixa", (c) => [{ id: uid(), tipo: "saida", comissaoPaga: true, valor, descricao: `Comissão gestor — ${m.modelo} ${m.placa}`, motoId: m.id, data: dt }, ...c]);
 
-  const sair = async () => { await sb.auth.signOut(); };
+  if (!loaded) return <div className="min-h-screen flex items-center justify-center text-slate-400">Carregando…</div>;
+  if (!session) return <Login adminAuth={adminAuth} investidores={data.investidores} onCreateAdmin={createAdmin} onLogin={setSession} />;
 
-  // ===== INVESTIDOR =====
-  if(!isAdmin){
-    const minhas = data.motos.filter(m=> m.proprietario_id===profile.id);
+  const locName = (id) => data.locatarios.find((l) => l.id === id)?.nome || "—";
+  const invName = (id) => data.investidores.find((i) => i.id === id)?.nome;
+  const motoDoLoc = (lid) => data.motos.find((m) => m.vinculo?.locatarioId === lid);
+  const motosDisponiveis = data.motos.filter((m) => !m.vinculo);
+  const caixaFiltrado = periodo === "tudo" ? data.caixa : data.caixa.filter((c) => (c.data || "").startsWith(periodo));
+
+  if (session.role === "investor") {
+    const minhas = data.motos.filter((m) => m.proprietarioId === session.investorId);
     return (
-      <div className="min-h-screen text-slate-800">
-        <div className="bg-indigo-700 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-          <div className="font-bold">👁️ Painel do Investidor</div>
-          <button onClick={sair} className="text-sm bg-indigo-600 px-3 py-1.5 rounded-lg">Sair</button>
-        </div>
+      <div className="min-h-screen bg-slate-100 text-slate-800">
+        <div className="bg-indigo-700 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><Eye className="w-5 h-5" /> Painel do Investidor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-indigo-600 px-3 py-1.5 rounded-lg"><LogOut className="w-4 h-4" /> Sair</button></div>
         <div className="max-w-2xl mx-auto p-4 space-y-3">
-          <div className="bg-white rounded-xl p-4 shadow-sm"><div className="text-sm text-slate-500">Olá,</div><div className="font-semibold text-lg">{profile.nome}</div><div className="text-sm text-slate-500 mt-1">{minhas.length} moto(s)</div></div>
+          <div className="bg-white rounded-xl p-4 shadow-sm"><div className="text-sm text-slate-500">Olá,</div><div className="font-semibold text-lg">{session.nome}</div><div className="text-sm text-slate-500 mt-1">{minhas.length} moto(s)</div></div>
           <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
-          {minhas.length===0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto vinculada ao seu acesso.</p>}
-          {minhas.map(m=> (
+          {minhas.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto vinculada ao seu acesso.</p>}
+          {minhas.map((m) => { const ci = contratoInfo(m, data.caixa); return (
             <div key={m.id} className="space-y-2">
-              <div className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center">
-                <div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{m.vinculo ? "Locatário: "+(m.vinculo.locatarioNome||"—")+" · vence "+fmtDate(m.vinculo.proximoVencimento) : "Sem locatário"}</div></div>
-                <span className={"text-xs px-2 py-1 rounded-full "+STATUS[m.status].cls}>{STATUS[m.status].label}</span>
-              </div>
-              <RelatorioCard m={m} caixa={caixaFiltrado} historico={histMoto(m, data.caixa)} />
+              <div className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{m.vinculo ? `Locatário: ${locName(m.vinculo.locatarioId)}` : "Sem locatário"}</div></div><span className={`text-xs px-2 py-1 rounded-full ${STATUS[m.status].cls}`}>{STATUS[m.status].label}</span></div>
+              <RelatorioCard m={m} caixa={caixaFiltrado} historico={histMoto(m, data.caixa)} saldo={ci ? ci.saldo : null} />
             </div>
-          ))}
-          <p className="text-[11px] text-slate-400 text-center pt-2">Visão somente leitura. Período selecionado acima.</p>
+          ); })}
         </div>
       </div>
     );
   }
 
-  // ===== ADMIN =====
-  const tabs=[["dash","📊 Painel"],["motos","🏍️ Motos"],["locatarios","👥 Locatários"],["caixa","💰 Caixa"],["vencimentos","🔔 Vencimentos"],["relatorios","📈 Relatórios"],["config","⚙️ Investidores"]];
-  const vencidos = data.motos.filter(m=> m.vinculo && m.vinculo.proximoVencimento < today()).length;
-  const q=filtroVenc.trim().toLowerCase();
-  const vencList = data.motos.filter(m=>m.vinculo).filter(m=> !q || (m.placa||"").toLowerCase().includes(q) || (m.vinculo.locatarioNome||"").toLowerCase().includes(q)).sort((a,b)=> a.vinculo.proximoVencimento.localeCompare(b.vinculo.proximoVencimento));
-  const relMotos = filtroRel ? data.motos.filter(m=>m.id===filtroRel) : data.motos;
-  const ult=(()=>{const arr=[];const d=new Date();for(let i=5;i>=0;i--){const dd=new Date(d.getFullYear(),d.getMonth()-i,1);arr.push({ym:dd.toISOString().slice(0,7),label:MESES[dd.getMonth()]});}return arr;})();
-  const chartData=ult.map(x=>({label:x.label, aluguel:data.caixa.filter(c=>c.aluguel&&(c.data||"").startsWith(x.ym)).reduce((s,c)=>s+(Number(c.valor)||0),0)}));
-  const maxCh=Math.max(...chartData.map(x=>x.aluguel),1);
-  const dAlug=caixaFiltrado.filter(c=>c.aluguel).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const dMulta=caixaFiltrado.filter(c=>c.multa).reduce((s,c)=>s+(Number(c.valor)||0),0);
-  let cDev=0,cPag=0,cRes=0; data.motos.forEach(m=>{const r=relatorioMoto(m,caixaFiltrado);cDev+=r.comissaoDevida;cPag+=r.comissaoPaga;cRes+=r.resultado;});
-  const cont={disponivel:0,alugada:0,manutencao:0}; data.motos.forEach(m=>{cont[m.status]=(cont[m.status]||0)+1;});
+  const tabs = [
+    { k: "dash", label: "Painel", icon: LayoutDashboard }, { k: "motos", label: "Motos", icon: Bike }, { k: "locatarios", label: "Locatários", icon: Users },
+    { k: "caixa", label: "Caixa", icon: Wallet }, { k: "vencimentos", label: "Vencimentos", icon: Bell }, { k: "cobrancas", label: "Cobranças", icon: AlertTriangle },
+    { k: "relatorios", label: "Relatórios", icon: BarChart3 }, { k: "config", label: "Investidores", icon: Settings },
+  ];
+  const ativos = data.motos.filter((m) => m.vinculo).map((m) => ({ m, ci: contratoInfo(m, data.caixa) }));
+  const vencidosN = ativos.filter((a) => a.ci && a.ci.vencido).length;
+
+  const registrarPagamento = (m, valorPago, multaTransito, despesas, dataPg) => {
+    const ciclo = m.vinculo.cicloId; const nome = locName(m.vinculo.locatarioId); const novos = [];
+    if (valorPago > 0) novos.push({ id: uid(), tipo: "entrada", pagamentoContrato: true, valor: valorPago, descricao: `Pagamento ${nome}`, motoId: m.id, data: dataPg, cicloId: ciclo });
+    if (multaTransito > 0) novos.push({ id: uid(), tipo: "entrada", multa: true, valor: multaTransito, descricao: `Multa de trânsito ${nome}`, motoId: m.id, data: dataPg, cicloId: ciclo });
+    (despesas || []).forEach((d) => { const v = Number(d.valor) || 0; if (v > 0) novos.push({ id: uid(), tipo: "saida", valor: v, descricao: d.descricao || `Despesa ${m.modelo}`, motoId: m.id, data: dataPg, cicloId: ciclo }); });
+    if (novos.length) upd("caixa", (c) => [...novos, ...c]);
+    setPayMoto(null);
+  };
+
+  const q = filtroVenc.trim().toLowerCase();
+  const vencList = ativos.filter(({ m }) => !q || (m.placa || "").toLowerCase().includes(q) || locName(m.vinculo.locatarioId).toLowerCase().includes(q)).sort((a, b) => (b.ci?.atraso || 0) - (a.ci?.atraso || 0));
+  const cobrList = ativos.filter((a) => a.ci && a.ci.vencido).sort((a, b) => b.ci.atraso - a.ci.atraso);
+  const relMotos = filtroRel ? data.motos.filter((m) => m.id === filtroRel) : data.motos;
+  const ult = (() => { const arr = []; const d = new Date(); for (let i = 5; i >= 0; i--) { const dd = new Date(d.getFullYear(), d.getMonth() - i, 1); arr.push({ ym: dd.toISOString().slice(0, 7), label: MESES[dd.getMonth()] }); } return arr; })();
+  const chartData = ult.map((x) => ({ label: x.label, recebido: data.caixa.filter((c) => c.pagamentoContrato && (c.data || "").startsWith(x.ym)).reduce((s, c) => s + (Number(c.valor) || 0), 0) }));
+  const maxCh = Math.max(...chartData.map((x) => x.recebido), 1);
+  const dRec = caixaFiltrado.filter((c) => c.pagamentoContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const saldoTotal = ativos.reduce((s, a) => s + (a.ci ? a.ci.saldo : 0), 0);
+  let cDev = 0, cPag = 0, cRes = 0; data.motos.forEach((m) => { const r = relatorioMoto(m, caixaFiltrado); cDev += r.comissaoDevida; cPag += r.comissaoPaga; cRes += r.resultado; });
+  const cont = { disponivel: 0, alugada: 0, manutencao: 0 }; data.motos.forEach((m) => { cont[m.status] = (cont[m.status] || 0) + 1; });
 
   return (
-    <div className="min-h-screen text-slate-800">
-      <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="font-bold">🏍️ MotoGestor</div>
-        <button onClick={sair} className="text-sm bg-slate-700 px-3 py-1.5 rounded-lg">Sair</button>
-      </div>
+    <div className="min-h-screen bg-slate-100 text-slate-800">
+      <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><Bike className="w-5 h-5" /> MotoGestor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-slate-700 px-3 py-1.5 rounded-lg"><LogOut className="w-4 h-4" /> Sair</button></div>
       <div className="flex overflow-x-auto bg-white border-b sticky top-[52px] z-10">
-        {tabs.map(([k,label])=> <button key={k} onClick={()=>setTab(k)} className={"flex-1 min-w-[88px] py-2.5 text-xs relative "+(tab===k?"text-slate-900 border-b-2 border-slate-800 font-medium":"text-slate-400")}>{label}{k==="vencimentos"&&vencidos>0&&<span className="absolute top-1 right-3 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 inline-flex items-center justify-center">{vencidos}</span>}</button>)}
+        {tabs.map((t) => { const Icon = t.icon; return (
+          <button key={t.k} onClick={() => setTab(t.k)} className={`flex-1 min-w-[80px] py-2.5 flex flex-col items-center gap-0.5 text-xs relative ${tab === t.k ? "text-slate-900 border-b-2 border-slate-800 font-medium" : "text-slate-400"}`}>
+            <Icon className="w-5 h-5" />{t.label}
+            {(t.k === "vencimentos" || t.k === "cobrancas") && vencidosN > 0 && <span className="absolute top-1 right-1/4 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{vencidosN}</span>}
+          </button>
+        ); })}
       </div>
       <div className="max-w-2xl mx-auto p-4 pb-20">
 
-        {tab==="dash" && <div className="space-y-3">
+        {tab === "dash" && <div className="space-y-3">
           <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
           <div className="grid grid-cols-2 gap-2">
-            <KPI label="Aluguel recebido" val={brl(dAlug)} cls="text-green-600" />
-            <KPI label="Multas / juros" val={brl(dMulta)} cls="text-green-600" />
-            <KPI label="Comissão a pagar" val={brl(cDev-cPag)} cls="text-amber-600" />
-            <KPI label="Resultado p/ você" val={brl(cRes)} cls={cRes>=0?"text-green-600":"text-red-500"} />
+            <KPI label="Recebido (período)" val={brl(dRec)} cls="text-green-600" />
+            <KPI label="Saldo a receber (em aberto)" val={brl(saldoTotal)} cls="text-red-600" />
+            <KPI label="Comissão a pagar" val={brl(cDev - cPag)} cls="text-amber-600" />
+            <KPI label="Resultado p/ você" val={brl(cRes)} cls={cRes >= 0 ? "text-green-600" : "text-red-500"} />
           </div>
           <div className="grid grid-cols-4 gap-2">
-            <KPI label="Motos" val={data.motos.length} />
-            <KPI label="Alugadas" val={cont.alugada} cls="text-blue-600" />
-            <KPI label="Disponív." val={cont.disponivel} cls="text-green-600" />
-            <KPI label="Manut." val={cont.manutencao} cls="text-amber-600" />
+            <KPI label="Motos" val={data.motos.length} /><KPI label="Alugadas" val={cont.alugada} cls="text-blue-600" /><KPI label="Disponív." val={cont.disponivel} cls="text-green-600" /><KPI label="Manut." val={cont.manutencao} cls="text-amber-600" />
           </div>
-          {vencidos>0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">⚠️ {vencidos} aluguel(éis) vencido(s). Veja na aba Vencimentos.</div>}
+          {vencidosN > 0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {vencidosN} contrato(s) com saldo vencido. Veja em Cobranças.</div>}
           <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="font-semibold text-sm mb-3">Aluguel recebido — últimos 6 meses</div>
-            <div className="flex items-end gap-2 h-40">
-              {chartData.map((d,i)=> <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                <div className="text-[9px] text-slate-500">{d.aluguel>0?brl(d.aluguel).replace("R$","").trim():""}</div>
-                <div className="w-full bg-green-500 rounded-t" style={{height:(d.aluguel>0?Math.max(6,(d.aluguel/maxCh)*120):2)+"px"}}></div>
-                <div className="text-[11px] text-slate-400 mt-1">{d.label}</div>
-              </div>)}
-            </div>
+            <div className="font-semibold text-sm mb-3">Recebido — últimos 6 meses</div>
+            <MiniBarChart data={chartData} max={maxCh} />
           </div>
         </div>}
 
-        {tab==="motos" && <div className="space-y-3">
-          {!addMoto&&!editMoto && <button onClick={()=>setAddMoto(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 font-medium">+ Cadastrar moto</button>}
-          {addMoto && <MotoForm investidores={data.investidores} onSave={saveMoto} onCancel={()=>setAddMoto(false)} />}
-          {data.motos.map(m=> editMoto===m.id ? <MotoForm key={m.id} initial={m} investidores={data.investidores} onSave={saveMoto} onCancel={()=>setEditMoto(null)} /> : (
+        {tab === "motos" && <div className="space-y-3">
+          {!addMoto && !editMoto && <button onClick={() => setAddMoto(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar moto</button>}
+          {addMoto && <MotoForm investidores={data.investidores} onSave={saveMoto} onCancel={() => setAddMoto(false)} />}
+          {data.motos.map((m) => editMoto === m.id ? <MotoForm key={m.id} initial={m} investidores={data.investidores} onSave={saveMoto} onCancel={() => setEditMoto(null)} /> : (
             <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-start">
-                <div><div className="font-semibold">{m.modelo}</div><div className="text-sm text-slate-500">{m.placa} {m.ano&&("· "+m.ano)}</div><div className="text-xs text-slate-400 mt-0.5">Dono: {m.proprietario_id?invName(m.proprietario_id):"Próprio"}</div></div>
-                <span className={"text-xs px-2 py-1 rounded-full "+STATUS[m.status].cls}>{STATUS[m.status].label}</span>
+                <div><div className="font-semibold">{m.modelo}</div><div className="text-sm text-slate-500">{m.placa} {m.ano && `· ${m.ano}`}</div><div className="text-xs text-slate-400 mt-0.5">Dono: {m.proprietarioId ? (invName(m.proprietarioId) || "—") : "Próprio"}</div></div>
+                <span className={`text-xs px-2 py-1 rounded-full ${STATUS[m.status].cls}`}>{STATUS[m.status].label}</span>
               </div>
-              <div className="mt-2 text-sm grid grid-cols-2 gap-1 bg-slate-50 rounded-lg p-2">
-                <span>Semana<br/><b>{brl(motoValor(m))}</b></span>
-                <span>Mês (≈{SEMANAS_MES})<br/><b>{brl(motoValor(m)*SEMANAS_MES)}</b></span>
-                <span>Entrada<br/><b>{brl(motoEntrada(m))}</b></span>
-                <span>Comissão {m.taxa_admin||0}%<br/><b>{brl(motoValor(m)*(m.taxa_admin||0)/100)}</b></span>
+              <div className="mt-2 text-sm grid grid-cols-3 gap-1 bg-slate-50 rounded-lg p-2">
+                <span>Semana<br /><b>{brl(valSem(m))}</b></span><span>Entrada<br /><b>{brl(motoEntrada(m))}</b></span><span>Comissão<br /><b>{m.taxaAdmin || 0}%</b></span>
               </div>
-              {m.vinculo ? <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2 flex justify-between items-center"><span>👤 {m.vinculo.locatarioNome} · vence {fmtDate(m.vinculo.proximoVencimento)}</span><button onClick={()=>desvincular(m.id)} className="text-red-500">desvincular</button></div>
-                : <button onClick={()=>setVincMoto(m.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 text-slate-600">🔗 Vincular locatário</button>}
-              {vincMoto===m.id && <VincForm mode="fromMoto" list={data.locatarios.map(l=>({id:l.id,label:l.nome,entrada:motoEntrada(m)}))} onSave={(lid,venc,ent)=>criarVinculo(m.id,lid,locName(lid),venc,ent)} onCancel={()=>setVincMoto(null)} />}
-              <div className="flex gap-3 mt-3 text-sm">
-                <button onClick={()=>setEditMoto(m.id)} className="text-slate-600">✏️ Editar</button>
-                <button onClick={()=>delMoto(m.id)} className="text-red-500">🗑️ Excluir</button>
-              </div>
+              {m.vinculo ? <>
+                <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2"><div>👤 {locName(m.vinculo.locatarioId)} · saldo {brl(contratoInfo(m, data.caixa)?.saldo || 0)}</div><div className="text-xs text-slate-500">Alugada em {fmtDate(m.vinculo.dataInicio)} · {daysBetween(m.vinculo.dataInicio, today())} dia(s) de contrato</div></div>
+                {saindo === m.id ? <div className="mt-2 bg-slate-50 border rounded-lg p-2 space-y-2"><label className="text-xs text-slate-500">Data de saída da moto</label><input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={dataSaida} onChange={(e) => setDataSaida(e.target.value)} /><div className="flex gap-2"><button onClick={() => encerrarContrato(m.id, dataSaida)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm">Encerrar contrato</button><button onClick={() => setSaindo(null)} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div></div>
+                  : <button onClick={() => { setSaindo(m.id); setDataSaida(today()); }} className="mt-2 w-full text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><Exit className="w-4 h-4" /> Encerrar contrato (registrar saída)</button>}
+              </> : <button onClick={() => setVincMoto(m.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><Link2 className="w-4 h-4" /> Vincular locatário</button>}
+              {vincMoto === m.id && <VincForm mode="fromMoto" valorSem={valSem(m)} list={data.locatarios.map((l) => ({ id: l.id, label: l.nome, entrada: motoEntrada(m), valorSem: valSem(m) }))} onSave={(lid, venc, ent) => { criarVinculo(m.id, lid, venc, ent); setVincMoto(null); }} onCancel={() => setVincMoto(null)} />}
+              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditMoto(m.id)} className="flex items-center gap-1 text-slate-600"><Pencil className="w-4 h-4" /> Editar</button><button onClick={() => delMoto(m.id)} className="flex items-center gap-1 text-red-500"><Trash2 className="w-4 h-4" /> Excluir</button></div>
             </div>
           ))}
-          {data.motos.length===0&&!addMoto && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto cadastrada.</p>}
+          {data.motos.length === 0 && !addMoto && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto cadastrada.</p>}
         </div>}
 
-        {tab==="locatarios" && <div className="space-y-3">
-          {!addLoc&&!editLoc && <button onClick={()=>setAddLoc(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 font-medium">+ Cadastrar locatário</button>}
-          {addLoc && <LocForm onSave={saveLoc} onCancel={()=>setAddLoc(false)} />}
-          {data.locatarios.map(l=>{ const moto=motoDoLoc(l.id); return editLoc===l.id ? <LocForm key={l.id} initial={l} onSave={saveLoc} onCancel={()=>setEditLoc(null)} /> : (
+        {tab === "locatarios" && <div className="space-y-3">
+          {!addLoc && !editLoc && <button onClick={() => setAddLoc(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar locatário</button>}
+          {addLoc && <LocForm onSave={saveLoc} onCancel={() => setAddLoc(false)} />}
+          {data.locatarios.map((l) => { const moto = motoDoLoc(l.id); const saidas = (data.historico || []).filter((h) => h.locatarioId === l.id); return editLoc === l.id ? <LocForm key={l.id} initial={l} onSave={saveLoc} onCancel={() => setEditLoc(null)} /> : (
             <div key={l.id} className="bg-white rounded-xl p-4 shadow-sm">
               <div className="font-semibold">{l.nome}</div>
-              <div className="text-sm text-slate-500">{l.telefone} {l.documento&&("· "+l.documento)}</div>
+              <div className="text-sm text-slate-500">{l.telefone} {l.documento && `· ${l.documento}`}</div>
               {l.obs && <div className="text-sm text-slate-400 mt-1">{l.obs}</div>}
-              {moto ? <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2 flex justify-between items-center"><span>🏍️ {moto.modelo} · {moto.placa} · vence {fmtDate(moto.vinculo.proximoVencimento)}</span><button onClick={()=>desvincular(moto.id)} className="text-red-500">desvincular</button></div>
-                : <button onClick={()=>setVincLoc(l.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 text-slate-600">🔗 Vincular motocicleta</button>}
-              {vincLoc===l.id && <VincForm mode="fromLoc" list={motosDisponiveis.map(m=>({id:m.id,label:m.modelo+" "+m.placa,entrada:motoEntrada(m)}))} onSave={(mid,venc,ent)=>criarVinculo(mid,l.id,l.nome,venc,ent)} onCancel={()=>setVincLoc(null)} />}
-              <div className="flex gap-3 mt-3 text-sm">
-                <button onClick={()=>setEditLoc(l.id)} className="text-slate-600">✏️ Editar</button>
-                <button onClick={()=>delLoc(l.id)} className="text-red-500">🗑️ Excluir</button>
-              </div>
+              {moto ? <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2"><div>🏍️ {moto.modelo} · {moto.placa} · saldo {brl(contratoInfo(moto, data.caixa)?.saldo || 0)}</div><div className="text-xs text-slate-500">Alugada em {fmtDate(moto.vinculo.dataInicio)} · {daysBetween(moto.vinculo.dataInicio, today())} dia(s)</div></div>
+                : <button onClick={() => setVincLoc(l.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><Link2 className="w-4 h-4" /> Vincular motocicleta</button>}
+              {saidas.length > 0 && <div className="mt-2 text-xs text-slate-400 space-y-0.5">{saidas.map((s) => <div key={s.id}>Alugada em {fmtDate(s.dataInicio)} · saída em {fmtDate(s.dataSaida)} · {daysBetween(s.dataInicio, s.dataSaida)} dia(s)</div>)}</div>}
+              {vincLoc === l.id && <VincForm mode="fromLoc" list={motosDisponiveis.map((m) => ({ id: m.id, label: `${m.modelo} ${m.placa}`, entrada: motoEntrada(m), valorSem: valSem(m) }))} onSave={(mid, venc, ent) => { criarVinculo(mid, l.id, venc, ent); setVincLoc(null); }} onCancel={() => setVincLoc(null)} />}
+              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditLoc(l.id)} className="flex items-center gap-1 text-slate-600"><Pencil className="w-4 h-4" /> Editar</button><button onClick={() => delLoc(l.id)} className="flex items-center gap-1 text-red-500"><Trash2 className="w-4 h-4" /> Excluir</button></div>
             </div>
-          );})}
-          {data.locatarios.length===0&&!addLoc && <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário cadastrado.</p>}
+          ); })}
+          {data.locatarios.length === 0 && !addLoc && <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário cadastrado.</p>}
         </div>}
 
-        {tab==="caixa" && <Caixa data={data} reload={reload} />}
+        {tab === "caixa" && <Caixa data={data} upd={upd} />}
 
-        {tab==="vencimentos" && <div className="space-y-3">
-          <input className="border rounded-lg px-3 py-2 w-full text-sm" placeholder="🔍 Filtrar por placa ou locatário" value={filtroVenc} onChange={e=>setFiltroVenc(e.target.value)} />
-          {vencList.length===0 && <p className="text-center text-slate-400 text-sm py-8">{data.motos.some(m=>m.vinculo)?"Nenhum resultado para o filtro.":"Nenhum aluguel ativo."}</p>}
-          {vencList.map(m=>{ const pv=m.vinculo.proximoVencimento; const venc=pv<today(); const av=!venc&&pv<=addDays(today(),3); return (
-            <div key={m.id} className={"bg-white rounded-xl p-4 shadow-sm border-l-4 "+(venc?"border-red-500":av?"border-amber-400":"border-green-400")}>
+        {tab === "vencimentos" && <div className="space-y-3">
+          <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Filtrar por placa ou locatário" value={filtroVenc} onChange={(e) => setFiltroVenc(e.target.value)} /></div>
+          {vencList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">{ativos.length ? "Nenhum resultado." : "Nenhum contrato ativo."}</p>}
+          {vencList.map(({ m, ci }) => (
+            <div key={m.id} className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${ci?.vencido ? "border-red-500" : ci?.saldo > 0.005 ? "border-amber-400" : "border-green-400"}`}>
               <div className="flex justify-between items-start">
-                <div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{m.vinculo.locatarioNome}</div><div className="text-sm mt-1">Vencimento: <b>{fmtDate(pv)}</b></div></div>
-                <span className={"text-xs px-2 py-1 rounded-full "+(venc?"bg-red-100 text-red-700":av?"bg-amber-100 text-amber-700":"bg-green-100 text-green-700")}>{venc?"Vencido":av?"A vencer":"Em dia"}</span>
+                <div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{locName(m.vinculo.locatarioId)}</div><div className="text-sm mt-1">Próx. vencimento: <b>{fmtDate(ci?.proximoVenc)}</b>{ci?.vencido && ` · ${ci.atraso} dia(s) em atraso`}</div></div>
+                <span className={`text-xs px-2 py-1 rounded-full ${ci?.vencido ? "bg-red-100 text-red-700" : ci?.saldo > 0.005 ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>{ci?.vencido ? "Vencido" : ci?.saldo > 0.005 ? "A vencer" : "Em dia"}</span>
               </div>
-              <div className="flex justify-between items-center mt-2"><span className="text-sm">Aluguel: <b>{brl(motoValor(m))}</b></span>{payMoto!==m.id && <button onClick={()=>setPayMoto(m.id)} className="bg-green-600 text-white text-sm px-3 py-1.5 rounded-lg">✔ Registrar pagamento</button>}</div>
-              {payMoto===m.id && <PagamentoForm moto={m} onSave={(a,mu,des,dt)=>registrarPagamento(m,a,mu,des,dt)} onCancel={()=>setPayMoto(null)} />}
+              <div className="mt-2 text-sm bg-slate-50 rounded-lg p-2 flex justify-between"><span className="text-slate-500">Saldo devedor</span><b className={ci?.saldo > 0.005 ? "text-red-600" : "text-green-600"}>{brl(ci?.saldo || 0)}</b></div>
+              {ci?.saldo > 0.005 && ci?.parcelas?.some((p) => !p.paga) && (() => { const abertas = ci.parcelas.filter((p) => !p.paga); return <div className="mt-2 border border-amber-100 bg-amber-50/60 rounded-lg p-2 space-y-2">
+                <div className="text-xs font-medium text-slate-600">Vencimentos em aberto ({abertas.length})</div>
+                {abertas.map((p, i) => <div key={i} className="bg-white rounded-lg p-2 flex justify-between items-center gap-2">
+                  <div className="text-xs min-w-0"><div className={p.vencido ? "text-red-600 font-medium" : "text-slate-700 font-medium"}>Semana de {fmtDate(p.data)}</div><div className="text-[11px] text-slate-400">{p.vencido ? `${p.atraso} dia(s) em atraso` : "a vencer"}{p.juros > 0.005 ? ` · inclui ${brl(p.juros)} de juros` : ""}</div>{p.restante < p.original - 0.005 && <div className="text-[11px] text-slate-400">pago {brl(p.original - p.restante)} de {brl(p.original)}</div>}</div>
+                  <div className="flex flex-col items-end gap-1 shrink-0"><b className={`text-sm ${p.vencido ? "text-red-600" : "text-slate-700"}`}>{brl(p.restante)}</b>{i === 0 && payMoto !== m.id ? <button onClick={() => registrarPagamento(m, p.restante, 0, [], today())} className="text-[11px] bg-green-600 text-white px-2 py-1 rounded-md flex items-center gap-1"><Check className="w-3 h-3" /> Dar baixa</button> : i > 0 ? <span className="text-[10px] text-slate-400">aguardando</span> : null}</div>
+                </div>)}
+                <p className="text-[10px] text-slate-400">A baixa quita sempre o vencimento mais antigo primeiro.</p>
+              </div>; })()}
+              {ci?.saldo <= 0.005 && <div className="mt-2 text-xs text-green-600">Em dia · próximo vencimento em {fmtDate(ci?.proximoVenc)}.</div>}
+              {ci?.jurosTotal > 0 && <div className="text-xs text-amber-600 mt-1">Inclui {brl(ci.jurosTotal)} de juros por atraso.</div>}
+              {payMoto !== m.id && <button onClick={() => setPayMoto(m.id)} className="mt-2 w-full border border-green-600 text-green-700 text-sm py-2 rounded-lg flex items-center justify-center gap-1">Registrar pagamento (valor parcial / multa / despesas)</button>}
+              {payMoto === m.id && <PagamentoForm moto={m} saldo={ci?.saldo || 0} parcelas={ci?.parcelas} onSave={(v, mt, des, dt) => registrarPagamento(m, v, mt, des, dt)} onCancel={() => setPayMoto(null)} />}
             </div>
-          );})}
+          ))}
         </div>}
 
-        {tab==="relatorios" && <div className="space-y-3">
+        {tab === "cobrancas" && <div className="space-y-3">
+          <div className="bg-red-600 text-white rounded-xl p-4"><div className="text-sm opacity-90">Cobranças vencidas</div><div className="text-2xl font-bold">{cobrList.length}</div><div className="text-sm mt-1">Total a receber: {brl(cobrList.reduce((s, a) => s + a.ci.saldo, 0))}</div></div>
+          {cobrList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma cobrança vencida. 🎉</p>}
+          {cobrList.map(({ m, ci }) => (
+            <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-red-500">
+              <div className="flex justify-between items-start"><div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{locName(m.vinculo.locatarioId)}</div></div><span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium">{ci.atraso} dia(s)</span></div>
+              <div className="mt-2 text-sm bg-slate-50 rounded-lg p-2 space-y-0.5">
+                <div className="flex justify-between"><span className="text-slate-500">Saldo devedor</span><b className="text-red-600">{brl(ci.saldo)}</b></div>
+                {ci.jurosTotal > 0 && <div className="flex justify-between text-amber-600"><span>Juros incluídos</span><b>{brl(ci.jurosTotal)}</b></div>}
+              </div>
+              {payMoto !== m.id && <button onClick={() => setPayMoto(m.id)} className="mt-2 w-full bg-green-600 text-white text-sm py-2 rounded-lg font-medium flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Dar baixa no pagamento</button>}
+              {payMoto === m.id && <PagamentoForm moto={m} saldo={ci.saldo} parcelas={ci.parcelas} onSave={(v, mt, des, dt) => registrarPagamento(m, v, mt, des, dt)} onCancel={() => setPayMoto(null)} />}
+            </div>
+          ))}
+        </div>}
+
+        {tab === "relatorios" && <div className="space-y-3">
+          <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
           <div className="grid grid-cols-2 gap-2">
-            <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
-            <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroRel} onChange={e=>setFiltroRel(e.target.value)}>
-              <option value="">Todas as motos</option>
-              {data.motos.map(m=> <option key={m.id} value={m.id}>{m.placa||m.modelo}</option>)}
+            <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={relModo} onChange={(e) => { setRelModo(e.target.value); setFiltroRel(""); setFiltroLoc(""); }}>
+              <option value="placa">Filtrar por placa</option>
+              <option value="locatario">Filtrar por locatário</option>
             </select>
+            {relModo === "placa"
+              ? <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroRel} onChange={(e) => setFiltroRel(e.target.value)}><option value="">Todas as motos</option>{data.motos.map((m) => <option key={m.id} value={m.id}>{m.placa || m.modelo}</option>)}</select>
+              : <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroLoc} onChange={(e) => setFiltroLoc(e.target.value)}><option value="">Todos os locatários</option>{data.locatarios.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}</select>}
           </div>
-          {data.motos.length===0 && <p className="text-center text-slate-400 text-sm py-8">Cadastre motos para ver relatórios.</p>}
-          {relMotos.map(m=> <RelatorioCard key={m.id} m={m} caixa={caixaFiltrado} historico={histMoto(m,data.caixa)} onPagarComissao={pagarComissao} />)}
-          {!filtroRel && data.motos.length>0 && <div className="bg-slate-800 text-white rounded-xl p-4 space-y-1 text-sm">
-            <div className="font-semibold mb-1">Total geral {periodo!=="tudo"&&("· "+mesLabel(periodo))}</div>
-            <div className="flex justify-between"><span>Aluguel recebido</span><b>{brl(dAlug)}</b></div>
-            <div className="flex justify-between"><span>Multas / juros</span><b>{brl(dMulta)}</b></div>
-            <div className="flex justify-between border-t border-slate-600 pt-1"><span>Comissão devida</span><b>{brl(cDev)}</b></div>
-            <div className="flex justify-between"><span>Comissão já paga</span><b>{brl(cPag)}</b></div>
-            <div className="flex justify-between text-amber-300"><span>Comissão a pagar</span><b>{brl(cDev-cPag)}</b></div>
-          </div>}
+
+          {relModo === "placa" && <>
+            {data.motos.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Cadastre motos para ver relatórios.</p>}
+            {relMotos.map((m) => <RelatorioCard key={m.id} m={m} caixa={caixaFiltrado} historico={histMoto(m, data.caixa)} saldo={m.vinculo ? contratoInfo(m, data.caixa)?.saldo : null} onPagarComissao={pagarComissao} />)}
+            {!filtroRel && data.motos.length > 0 && <div className="bg-slate-800 text-white rounded-xl p-4 space-y-1 text-sm">
+              <div className="font-semibold mb-1">Total geral {periodo !== "tudo" && `· ${mesLabel(periodo)}`}</div>
+              <div className="flex justify-between"><span>Recebido</span><b>{brl(dRec)}</b></div>
+              <div className="flex justify-between"><span>Saldo a receber (em aberto)</span><b>{brl(saldoTotal)}</b></div>
+              <div className="flex justify-between border-t border-slate-600 pt-1"><span>Comissão devida</span><b>{brl(cDev)}</b></div>
+              <div className="flex justify-between text-amber-300"><span>Comissão a pagar</span><b>{brl(cDev - cPag)}</b></div>
+            </div>}
+          </>}
+
+          {relModo === "locatario" && (() => {
+            if (data.locatarios.length === 0) return <p className="text-center text-slate-400 text-sm py-8">Cadastre locatários primeiro.</p>;
+            const locs = filtroLoc ? data.locatarios.filter((l) => l.id === filtroLoc) : data.locatarios;
+            return locs.map((l) => {
+              const ativos = data.motos.filter((m) => m.vinculo?.locatarioId === l.id).map((m) => ({ moto: m, motoNome: `${m.modelo} ${m.placa}`, dataInicio: m.vinculo.dataInicio, dataSaida: null, cicloId: m.vinculo.cicloId, ativo: true }));
+              const hist = (data.historico || []).filter((h) => h.locatarioId === l.id).map((h) => { const mo = data.motos.find((x) => x.id === h.motoId); return { moto: mo, motoNome: mo ? `${mo.modelo} ${mo.placa}` : (h.motoNome || "Moto removida"), dataInicio: h.dataInicio, dataSaida: h.dataSaida, cicloId: h.cicloId, ativo: false }; });
+              const contratos = [...ativos, ...hist];
+              return (
+                <div key={l.id} className="space-y-2">
+                  <div className="bg-white rounded-xl p-4 shadow-sm"><div className="font-semibold">{l.nome}</div><div className="text-sm text-slate-500">{l.telefone} · {contratos.length} contrato(s)</div></div>
+                  {contratos.length === 0 && <p className="text-center text-slate-400 text-sm py-2">Sem contratos registrados.</p>}
+                  {contratos.map((ct, idx) => {
+                    const r = ct.moto ? relatorioMoto(ct.moto, caixaFiltrado, ct.cicloId) : null;
+                    const saldo = ct.ativo && ct.moto ? contratoInfo(ct.moto, data.caixa)?.saldo : null;
+                    return (
+                      <div key={idx} className="bg-white rounded-xl p-4 shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div><div className="font-semibold">{ct.motoNome}</div>
+                            <div className="text-xs text-slate-500 mt-0.5">Alugada em {fmtDate(ct.dataInicio)} · {ct.ativo ? "em andamento" : `saída em ${fmtDate(ct.dataSaida)}`}</div>
+                            <div className="text-xs text-slate-400">Tempo de contrato: {daysBetween(ct.dataInicio, ct.dataSaida || today())} dia(s)</div>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded-full ${ct.ativo ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{ct.ativo ? "Ativo" : "Encerrado"}</span>
+                        </div>
+                        {r && <div className="mt-2 text-sm space-y-1 border-t pt-2">
+                          {saldo != null && <Row label="Saldo devedor" val={brl(saldo)} cls={saldo > 0.005 ? "text-red-600" : "text-green-600"} bold />}
+                          <Row label={`Recebido (${r.nPg} pgto)`} val={brl(r.recebido)} cls="text-green-600" />
+                          <Row label={`Comissão devida (${ct.moto.taxaAdmin || 0}%)`} val={brl(r.comissaoDevida)} cls="text-amber-600" />
+                          <Row label="Resultado para você" val={brl(r.resultado)} bold cls={r.resultado >= 0 ? "text-green-600" : "text-red-500"} />
+                        </div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            });
+          })()}
         </div>}
 
-        {tab==="config" && <div className="space-y-3">
-          <div className="bg-white rounded-xl p-4 shadow-sm text-sm text-slate-600 space-y-2">
-            <div className="font-semibold text-slate-800">Como adicionar um investidor</div>
-            <p>1. No painel do Supabase, vá em <b>Authentication → Users → Add user</b> e crie o login (e-mail + senha) do investidor.</p>
-            <p>2. Aqui no app, em <b>Motos</b>, edite a moto e escolha o investidor no campo <b>"Pertence a"</b>.</p>
-            <p>O investidor entra com o e-mail/senha que você criou e vê só as motos dele, em modo leitura.</p>
-          </div>
-          <div className="font-medium text-slate-700 text-sm">Investidores cadastrados</div>
-          {data.investidores.map(i=> <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">{data.motos.filter(m=>m.proprietario_id===i.id).length} moto(s)</div></div></div>)}
-          {data.investidores.length===0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum investidor ainda. Crie pelo painel do Supabase.</p>}
-        </div>}
-
+        {tab === "config" && <Investidores data={data} upd={upd} />}
       </div>
     </div>
   );
 }
 
-function Caixa({ data, reload }){
-  const [f,setF]=useState({ tipo:"entrada", valor:"", descricao:"", moto_id:"", data:today() });
-  const set=(k,v)=>setF(s=>({...s,[k]:v}));
-  const add = async () => {
-    if(!f.valor) return;
-    const res = await sb.from("caixa").insert({ tipo:f.tipo, valor:Number(f.valor), descricao:f.descricao, moto_id:f.moto_id||null, data:f.data, aluguel:false, multa:false });
-    if(res.error) return alert(res.error.message);
-    setF({ tipo:"entrada", valor:"", descricao:"", moto_id:"", data:today() }); reload();
-  };
-  const del = async (id) => { const res=await sb.from("caixa").delete().eq("id",id); if(res.error) return alert(res.error.message); reload(); };
-  const entradas=data.caixa.filter(c=>c.tipo==="entrada").reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const saidas=data.caixa.filter(c=>c.tipo==="saida").reduce((s,c)=>s+(Number(c.valor)||0),0);
-  const motoLabel=(id)=>{const m=data.motos.find(x=>x.id===id);return m?(m.modelo+" "+m.placa):null;};
+function Investidores({ data, upd }) {
+  const [f, setF] = useState({ nome: "", user: "", senha: "" });
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const add = () => { if (!f.nome.trim() || !f.user.trim() || !f.senha) return; if (data.investidores.some((i) => i.user === f.user.trim())) { alert("Já existe esse usuário."); return; } upd("investidores", (l) => [...l, { id: uid(), nome: f.nome.trim(), user: f.user.trim(), senha: f.senha }]); setF({ nome: "", user: "", senha: "" }); };
+  const del = (id) => { upd("investidores", (l) => l.filter((x) => x.id !== id)); upd("motos", (m) => m.map((x) => x.proprietarioId === id ? { ...x, proprietarioId: "" } : x)); };
+  const countMotos = (id) => data.motos.filter((m) => m.proprietarioId === id).length;
+  return (
+    <div className="space-y-3">
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+        <div className="flex items-center gap-2 font-medium text-slate-700"><UserPlus className="w-4 h-4" /> Novo acesso de investidor</div>
+        <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nome" value={f.nome} onChange={(e) => set("nome", e.target.value)} />
+        <div className="grid grid-cols-2 gap-2"><input className="border rounded-lg px-3 py-2" placeholder="Usuário" value={f.user} onChange={(e) => set("user", e.target.value)} /><input className="border rounded-lg px-3 py-2" placeholder="Senha" value={f.senha} onChange={(e) => set("senha", e.target.value)} /></div>
+        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Criar acesso</button>
+      </div>
+      {data.investidores.map((i) => <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">login: {i.user} · {countMotos(i.id)} moto(s)</div></div><button onClick={() => del(i.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button></div>)}
+      {data.investidores.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum investidor cadastrado.</p>}
+    </div>
+  );
+}
+
+function Caixa({ data, upd }) {
+  const [f, setF] = useState({ tipo: "entrada", valor: "", descricao: "", motoId: "", data: today() });
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const add = () => { if (!f.valor) return; const mo = data.motos.find((m) => m.id === f.motoId); const isSaldo = f.tipo === "saldo"; upd("caixa", (c) => [{ ...f, id: uid(), valor: Number(f.valor), motoId: f.motoId || null, cicloId: mo?.cicloAtual || null, tipo: isSaldo ? "entrada" : f.tipo, saldoInicial: isSaldo || undefined, descricao: f.descricao || (isSaldo ? "Saldo inicial" : "") }, ...c]); setF({ tipo: "entrada", valor: "", descricao: "", motoId: "", data: today() }); };
+  const entradas = data.caixa.filter((c) => c.tipo === "entrada").reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const saidas = data.caixa.filter((c) => c.tipo === "saida").reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const motoLabel = (id) => { const m = data.motos.find((x) => x.id === id); return m ? `${m.modelo} ${m.placa}` : null; };
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-green-50 rounded-xl p-3 text-center"><div className="text-xs text-slate-500">Entradas</div><div className="font-bold text-green-600">{brl(entradas)}</div></div>
         <div className="bg-red-50 rounded-xl p-3 text-center"><div className="text-xs text-slate-500">Saídas</div><div className="font-bold text-red-500">{brl(saidas)}</div></div>
-        <div className="bg-slate-800 rounded-xl p-3 text-center text-white"><div className="text-xs text-slate-300">Saldo</div><div className="font-bold">{brl(entradas-saidas)}</div></div>
+        <div className="bg-slate-800 rounded-xl p-3 text-center text-white"><div className="text-xs text-slate-300">Saldo</div><div className="font-bold">{brl(entradas - saidas)}</div></div>
       </div>
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
-        <div className="flex gap-2">
-          <button onClick={()=>set("tipo","entrada")} className={"flex-1 py-2 rounded-lg text-sm font-medium "+(f.tipo==="entrada"?"bg-green-600 text-white":"bg-slate-100")}>Entrada</button>
-          <button onClick={()=>set("tipo","saida")} className={"flex-1 py-2 rounded-lg text-sm font-medium "+(f.tipo==="saida"?"bg-red-500 text-white":"bg-slate-100")}>Saída</button>
-        </div>
-        <input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="Valor (R$)" value={f.valor} onChange={e=>set("valor",e.target.value)} />
-        <input className="border rounded-lg px-3 py-2 w-full" placeholder="Descrição" value={f.descricao} onChange={e=>set("descricao",e.target.value)} />
-        <div className="grid grid-cols-2 gap-2">
-          <select className="border rounded-lg px-3 py-2 text-sm" value={f.moto_id} onChange={e=>set("moto_id",e.target.value)}>
-            <option value="">Sem moto vinculada</option>
-            {data.motos.map(m=> <option key={m.id} value={m.id}>{m.modelo} {m.placa}</option>)}
-          </select>
-          <input type="date" className="border rounded-lg px-3 py-2 text-sm" value={f.data} onChange={e=>set("data",e.target.value)} />
-        </div>
-        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">+ Lançar</button>
+        <div className="grid grid-cols-3 gap-2"><button onClick={() => set("tipo", "entrada")} className={`py-2 rounded-lg text-sm font-medium ${f.tipo === "entrada" ? "bg-green-600 text-white" : "bg-slate-100"}`}>Entrada</button><button onClick={() => set("tipo", "saida")} className={`py-2 rounded-lg text-sm font-medium ${f.tipo === "saida" ? "bg-red-500 text-white" : "bg-slate-100"}`}>Saída</button><button onClick={() => set("tipo", "saldo")} className={`py-2 rounded-lg text-sm font-medium ${f.tipo === "saldo" ? "bg-slate-800 text-white" : "bg-slate-100"}`}>Saldo inicial</button></div>
+        <input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="Valor (R$)" value={f.valor} onChange={(e) => set("valor", e.target.value)} />
+        <input className="border rounded-lg px-3 py-2 w-full" placeholder="Descrição" value={f.descricao} onChange={(e) => set("descricao", e.target.value)} />
+        <div className="grid grid-cols-2 gap-2"><select className="border rounded-lg px-3 py-2 text-sm" value={f.motoId} onChange={(e) => set("motoId", e.target.value)}><option value="">Sem moto vinculada</option>{data.motos.map((m) => <option key={m.id} value={m.id}>{m.modelo} {m.placa}</option>)}</select><input type="date" className="border rounded-lg px-3 py-2 text-sm" value={f.data} onChange={(e) => set("data", e.target.value)} /></div>
+        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Lançar</button>
+        <p className="text-[11px] text-slate-400">Os pagamentos dos contratos devem ser feitos na aba Vencimentos/Cobranças para abater o saldo. Lançamentos aqui são avulsos.</p>
       </div>
       <div className="space-y-2">
-        {data.caixa.length===0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum lançamento.</p>}
-        {data.caixa.map(c=> (
+        {data.caixa.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum lançamento.</p>}
+        {data.caixa.map((c) => (
           <div key={c.id} className="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center">
-            <div><div className="font-medium text-sm">{c.descricao||(c.tipo==="entrada"?"Entrada":"Saída")}
-              {c.aluguel&&<span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded ml-1">aluguel</span>}
-              {c.multa&&<span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded ml-1">multa</span>}
-              {c.entrada_contrato&&<span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded ml-1">entrada</span>}
-              {c.comissao_paga&&<span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-1">comissão</span>}
-            </div><div className="text-xs text-slate-400">{fmtDate(c.data)} {motoLabel(c.moto_id)&&("· "+motoLabel(c.moto_id))}</div></div>
-            <div className="flex items-center gap-2"><span className={"font-semibold text-sm "+(c.tipo==="entrada"?"text-green-600":"text-red-500")}>{c.tipo==="entrada"?"+":"−"} {brl(c.valor)}</span><button onClick={()=>del(c.id)} className="text-slate-300">✕</button></div>
+            <div><div className="font-medium text-sm">{c.descricao || (c.tipo === "entrada" ? "Entrada" : "Saída")}
+              {c.pagamentoContrato && <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded ml-1">pagamento</span>}
+              {c.multa && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded ml-1">multa trânsito</span>}
+              {c.entradaContrato && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded ml-1">entrada</span>}
+              {c.saldoInicial && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded ml-1">saldo inicial</span>}
+              {c.comissaoPaga && <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-1">comissão</span>}
+            </div><div className="text-xs text-slate-400">{fmtDate(c.data)} {motoLabel(c.motoId) && `· ${motoLabel(c.motoId)}`}</div></div>
+            <div className="flex items-center gap-2"><span className={`font-semibold text-sm ${c.tipo === "entrada" ? "text-green-600" : "text-red-500"}`}>{c.tipo === "entrada" ? "+" : "−"} {brl(c.valor)}</span><button onClick={() => upd("caixa", (cx) => cx.filter((x) => x.id !== c.id))} className="text-slate-300 hover:text-red-500"><X className="w-4 h-4" /></button></div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+/* ====================== INICIALIZACAO ====================== */
+const _notCfg = SUPABASE_URL.indexOf("COLE_") !== -1 || SUPABASE_KEY.indexOf("COLE_") !== -1;
+const _root = ReactDOM.createRoot(document.getElementById("root"));
+if (_notCfg) {
+  _root.render(
+    <div className="max-w-md mx-auto mt-16 bg-white rounded-2xl p-6 shadow">
+      <h1 className="font-bold text-lg mb-2 text-slate-800">Falta um passo 🙂</h1>
+      <p className="text-sm text-slate-600">Abra este arquivo <b>index.html</b> num editor de texto (Bloco de Notas) e cole, lá no topo, a sua <b>Project URL</b> e a sua <b>chave</b> do Supabase nas linhas <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code>. Depois salve e atualize a página.</p>
+    </div>
+  );
+} else {
+  _root.render(<App />);
+}
 </script>
 </body>
 </html>
