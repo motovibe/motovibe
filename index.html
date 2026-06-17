@@ -522,6 +522,8 @@ function App() {
   const [periodo, setPeriodo] = useState("tudo");
   const [filtroVenc, setFiltroVenc] = useState(""); const [filtroRel, setFiltroRel] = useState("");
   const [relModo, setRelModo] = useState("placa"); const [filtroLoc, setFiltroLoc] = useState("");
+  const [buscaMoto, setBuscaMoto] = useState(""); const [buscaLoc, setBuscaLoc] = useState("");
+  const [buscaCobr, setBuscaCobr] = useState(""); const [buscaInv, setBuscaInv] = useState("");
   const [invTab, setInvTab] = useState("painel");
   const firstSave = useRef(true);
 
@@ -669,6 +671,14 @@ function App() {
   const q = filtroVenc.trim().toLowerCase();
   const vencList = ativos.filter(({ m }) => !q || (m.placa || "").toLowerCase().includes(q) || locName(m.vinculo.locatarioId).toLowerCase().includes(q)).sort((a, b) => (b.ci?.atraso || 0) - (a.ci?.atraso || 0));
   const cobrList = ativos.filter((a) => a.ci && a.ci.vencido).sort((a, b) => b.ci.atraso - a.ci.atraso);
+  const qMoto = buscaMoto.trim().toLowerCase();
+  const motosList = data.motos.filter((m) => !qMoto || (m.placa || "").toLowerCase().includes(qMoto) || (m.modelo || "").toLowerCase().includes(qMoto) || (m.vinculo && locName(m.vinculo.locatarioId).toLowerCase().includes(qMoto)) || (m.proprietarioId && (invName(m.proprietarioId) || "").toLowerCase().includes(qMoto)));
+  const qLoc = buscaLoc.trim().toLowerCase();
+  const locatariosList = data.locatarios.filter((l) => !qLoc || (l.nome || "").toLowerCase().includes(qLoc) || telStr(l).toLowerCase().includes(qLoc) || (motoDoLoc(l.id) && `${motoDoLoc(l.id).modelo} ${motoDoLoc(l.id).placa}`.toLowerCase().includes(qLoc)));
+  const qCobr = buscaCobr.trim().toLowerCase();
+  const cobrListF = cobrList.filter(({ m }) => !qCobr || (m.placa || "").toLowerCase().includes(qCobr) || locName(m.vinculo.locatarioId).toLowerCase().includes(qCobr));
+  const qInv = buscaInv.trim().toLowerCase();
+  const investidoresList = data.investidores.filter((i) => !qInv || (i.nome || "").toLowerCase().includes(qInv) || (i.user || "").toLowerCase().includes(qInv));
   const relMotos = filtroRel ? data.motos.filter((m) => m.id === filtroRel) : data.motos;
   const ult = (() => { const arr = []; const d = new Date(); for (let i = 5; i >= 0; i--) { const dd = new Date(d.getFullYear(), d.getMonth() - i, 1); arr.push({ ym: dd.toISOString().slice(0, 7), label: MESES[dd.getMonth()] }); } return arr; })();
   const chartData = ult.map((x) => ({ label: x.label, recebido: data.caixa.filter((c) => c.pagamentoContrato && (c.data || "").startsWith(x.ym)).reduce((s, c) => s + (Number(c.valor) || 0), 0) }));
@@ -712,7 +722,8 @@ function App() {
         {tab === "motos" && <div className="space-y-3">
           {!addMoto && !editMoto && <button onClick={() => setAddMoto(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar moto</button>}
           {addMoto && <MotoForm investidores={data.investidores} onSave={saveMoto} onCancel={() => setAddMoto(false)} />}
-          {data.motos.map((m) => editMoto === m.id ? <MotoForm key={m.id} initial={m} investidores={data.investidores} onSave={saveMoto} onCancel={() => setEditMoto(null)} /> : (
+          {!addMoto && !editMoto && data.motos.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por placa, modelo, locatário ou investidor" value={buscaMoto} onChange={(e) => setBuscaMoto(e.target.value)} /></div>}
+          {motosList.map((m) => editMoto === m.id ? <MotoForm key={m.id} initial={m} investidores={data.investidores} onSave={saveMoto} onCancel={() => setEditMoto(null)} /> : (
             <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-start">
                 <div><div className="font-semibold">{m.modelo}</div><div className="text-sm text-slate-500">{m.placa} {m.ano && `· ${m.ano}`}</div><div className="text-xs text-slate-400 mt-0.5">Dono: {m.proprietarioId ? (invName(m.proprietarioId) || "—") : "Próprio"}</div></div>
@@ -731,12 +742,14 @@ function App() {
             </div>
           ))}
           {data.motos.length === 0 && !addMoto && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto cadastrada.</p>}
+          {data.motos.length > 0 && motosList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhum resultado.</p>}
         </div>}
 
         {tab === "locatarios" && <div className="space-y-3">
           {!addLoc && !editLoc && <button onClick={() => setAddLoc(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar locatário</button>}
           {addLoc && <LocForm onSave={saveLoc} onCancel={() => setAddLoc(false)} />}
-          {data.locatarios.map((l) => { const moto = motoDoLoc(l.id); const saidas = (data.historico || []).filter((h) => h.locatarioId === l.id); return editLoc === l.id ? <LocForm key={l.id} initial={l} onSave={saveLoc} onCancel={() => setEditLoc(null)} /> : (
+          {!addLoc && !editLoc && data.locatarios.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por nome, telefone ou moto" value={buscaLoc} onChange={(e) => setBuscaLoc(e.target.value)} /></div>}
+          {locatariosList.map((l) => { const moto = motoDoLoc(l.id); const saidas = (data.historico || []).filter((h) => h.locatarioId === l.id); return editLoc === l.id ? <LocForm key={l.id} initial={l} onSave={saveLoc} onCancel={() => setEditLoc(null)} /> : (
             <div key={l.id} className="bg-white rounded-xl p-4 shadow-sm">
               <div className="font-semibold">{l.nome}</div>
               <div className="text-sm text-slate-500">{telStr(l)} {l.documento && `· ${l.documento}`}</div>
@@ -750,6 +763,7 @@ function App() {
             </div>
           ); })}
           {data.locatarios.length === 0 && !addLoc && <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário cadastrado.</p>}
+          {data.locatarios.length > 0 && locatariosList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhum resultado.</p>}
         </div>}
 
         {tab === "caixa" && <Caixa data={data} upd={upd} />}
@@ -782,8 +796,10 @@ function App() {
 
         {tab === "cobrancas" && <div className="space-y-3">
           <div className="bg-red-600 text-white rounded-xl p-4"><div className="text-sm opacity-90">Cobranças vencidas</div><div className="text-2xl font-bold">{cobrList.length}</div><div className="text-sm mt-1">Total a receber: {brl(cobrList.reduce((s, a) => s + a.ci.saldo, 0))}</div></div>
+          {cobrList.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por placa ou locatário" value={buscaCobr} onChange={(e) => setBuscaCobr(e.target.value)} /></div>}
           {cobrList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma cobrança vencida. 🎉</p>}
-          {cobrList.map(({ m, ci }) => (
+          {cobrList.length > 0 && cobrListF.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhum resultado.</p>}
+          {cobrListF.map(({ m, ci }) => (
             <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-red-500">
               <div className="flex justify-between items-start"><div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{locName(m.vinculo.locatarioId)}</div></div><span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium">{ci.atraso} dia(s)</span></div>
               <div className="mt-2 text-sm bg-slate-50 rounded-lg p-2 space-y-0.5">
@@ -798,14 +814,14 @@ function App() {
 
         {tab === "relatorios" && <RelatoriosView motos={data.motos} locatarios={data.locatarios} caixa={data.caixa} historico={data.historico} periodo={periodo} setPeriodo={setPeriodo} onPagarComissao={pagarComissao} />}
 
-        {tab === "config" && <Investidores data={data} upd={upd} />}
+        {tab === "config" && <Investidores data={data} upd={upd} busca={buscaInv} setBusca={setBuscaInv} list={investidoresList} />}
         {tab === "backup" && <Backup data={data} setData={setData} />}
       </div>
     </div>
   );
 }
 
-function Investidores({ data, upd }) {
+function Investidores({ data, upd, busca, setBusca, list }) {
   const [f, setF] = useState({ nome: "", user: "", senha: "" });
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const add = () => { if (!f.nome.trim() || !f.user.trim() || !f.senha) return; if (data.investidores.some((i) => i.user === f.user.trim())) { alert("Já existe esse usuário."); return; } upd("investidores", (l) => [...l, { id: uid(), nome: f.nome.trim(), user: f.user.trim(), senha: f.senha }]); setF({ nome: "", user: "", senha: "" }); };
@@ -819,19 +835,24 @@ function Investidores({ data, upd }) {
         <div className="grid grid-cols-2 gap-2"><input className="border rounded-lg px-3 py-2" placeholder="Usuário" value={f.user} onChange={(e) => set("user", e.target.value)} /><input className="border rounded-lg px-3 py-2" placeholder="Senha" value={f.senha} onChange={(e) => set("senha", e.target.value)} /></div>
         <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Criar acesso</button>
       </div>
-      {data.investidores.map((i) => <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">login: {i.user} · {countMotos(i.id)} moto(s)</div></div><button onClick={() => del(i.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button></div>)}
+      {data.investidores.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por nome ou usuário" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>}
+      {list.map((i) => <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">login: {i.user} · {countMotos(i.id)} moto(s)</div></div><button onClick={() => del(i.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button></div>)}
       {data.investidores.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum investidor cadastrado.</p>}
+      {data.investidores.length > 0 && list.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum resultado.</p>}
     </div>
   );
 }
 
 function Caixa({ data, upd }) {
   const [f, setF] = useState({ tipo: "entrada", valor: "", descricao: "", motoId: "", data: today() });
+  const [busca, setBusca] = useState("");
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const add = () => { if (!f.valor) return; const mo = data.motos.find((m) => m.id === f.motoId); const isSaldo = f.tipo === "saldo"; upd("caixa", (c) => [{ ...f, id: uid(), valor: Number(f.valor), motoId: f.motoId || null, cicloId: mo?.cicloAtual || null, tipo: isSaldo ? "entrada" : f.tipo, saldoInicial: isSaldo || undefined, descricao: f.descricao || (isSaldo ? "Saldo inicial" : "") }, ...c]); setF({ tipo: "entrada", valor: "", descricao: "", motoId: "", data: today() }); };
   const entradas = data.caixa.filter((c) => c.tipo === "entrada").reduce((s, c) => s + (Number(c.valor) || 0), 0);
   const saidas = data.caixa.filter((c) => c.tipo === "saida").reduce((s, c) => s + (Number(c.valor) || 0), 0);
   const motoLabel = (id) => { const m = data.motos.find((x) => x.id === id); return m ? `${m.modelo} ${m.placa}` : null; };
+  const q = busca.trim().toLowerCase();
+  const lista = data.caixa.filter((c) => !q || (c.descricao || "").toLowerCase().includes(q) || (motoLabel(c.motoId) || "").toLowerCase().includes(q));
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
@@ -848,8 +869,10 @@ function Caixa({ data, upd }) {
         <p className="text-[11px] text-slate-400">Os pagamentos dos contratos devem ser feitos na aba Vencimentos/Cobranças para abater o saldo. Lançamentos aqui são avulsos.</p>
       </div>
       <div className="space-y-2">
+        {data.caixa.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por descrição ou moto" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>}
         {data.caixa.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum lançamento.</p>}
-        {data.caixa.map((c) => (
+        {data.caixa.length > 0 && lista.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum resultado.</p>}
+        {lista.map((c) => (
           <div key={c.id} className="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center">
             <div><div className="font-medium text-sm">{c.descricao || (c.tipo === "entrada" ? "Entrada" : "Saída")}
               {c.pagamentoContrato && <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded ml-1">pagamento</span>}
