@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MotoVibe — Controle de Aluguel de Motos</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100">
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+/* @jsxRuntime classic */
+const { useState, useEffect, useRef } = React;
+
+/* ============================================================
+   >>>>>>>>>>  COLE AQUI AS SUAS 2 CHAVES DO SUPABASE  <<<<<<<<<<
+   (no painel do Supabase: Settings -> API Keys / botao Connect)
+   Troque o texto entre aspas, mantendo as aspas.
+   ============================================================ */
+const SUPABASE_URL = "https://vtqgfpkmprulzomkghxq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RCuLfwkZqCFE4RiKlQg4RA_4UyLT8bh";
+/* ============================================================ */
+
+/* ---- icones (substituem o lucide-react) ---- */
+const Svg = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props} />;
+const Bike = (p) => <Svg {...p}><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 18 11 8h4M9 8h6l2 10M14 6h3"/></Svg>;
+const Users = (p) => <Svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Svg>;
+const Wallet = (p) => <Svg {...p}><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 9h18"/><path d="M16 13h.01"/></Svg>;
+const Bell = (p) => <Svg {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Svg>;
+const BarChart3 = (p) => <Svg {...p}><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-8"/></Svg>;
+const LogOut = (p) => <Svg {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></Svg>;
+const Exit = LogOut;
+const Plus = (p) => <Svg {...p}><path d="M12 5v14M5 12h14"/></Svg>;
+const Trash2 = (p) => <Svg {...p}><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></Svg>;
+const Pencil = (p) => <Svg {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></Svg>;
+const Link2 = (p) => <Svg {...p}><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><path d="M8 12h8"/></Svg>;
+const Unlink = (p) => <Svg {...p}><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 4 8"/><path d="M3 3l18 18"/></Svg>;
+const Check = (p) => <Svg {...p}><path d="M20 6 9 17l-5-5"/></Svg>;
+const X = (p) => <Svg {...p}><path d="M18 6 6 18M6 6l12 12"/></Svg>;
+const AlertTriangle = (p) => <Svg {...p}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Svg>;
+const Lock = (p) => <Svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Svg>;
+const Settings = (p) => <Svg {...p}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></Svg>;
+const UserPlus = (p) => <Svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></Svg>;
+const Eye = (p) => <Svg {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></Svg>;
+const LayoutDashboard = (p) => <Svg {...p}><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></Svg>;
+const Search = (p) => <Svg {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Svg>;
+const Download = (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></Svg>;
+
+/* ---- grafico simples (substitui o recharts) ---- */
+const MiniBarChart = ({ data, max }) => {
+  const m = max || Math.max.apply(null, data.map((d) => d.recebido).concat(1));
+  return (
+    <div className="flex items-end gap-2" style={{ height: 200 }}>
+      {data.map((d, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+          <div className="text-[10px] text-slate-500 mb-1">{d.recebido > 0 ? brl(d.recebido) : ""}</div>
+          <div className="w-full bg-green-600 rounded-t-md" style={{ height: Math.max(2, (d.recebido / m) * 150) }} />
+          <div className="text-[11px] text-slate-500 mt-1">{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* ---- conexao com o Supabase (substitui o window.storage) ---- */
+let _supabase = null;
+try { const { createClient } = supabase; _supabase = createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Erro ao iniciar Supabase:", e); }
+window.storage = {
+  async get(key) {
+    const { data, error } = await _supabase.from("app_state").select("data").eq("id", key).maybeSingle();
+    if (error) throw error;
+    return data ? { value: JSON.stringify(data.data) } : null;
+  },
+  async set(key, value) {
+    const { error } = await _supabase.from("app_state").upsert({ id: key, data: JSON.parse(value) });
+    if (error) throw error;
+  },
+  async list(prefix) {
+    const { data, error } = await _supabase.from("app_state").select("id").like("id", (prefix || "") + "%");
+    if (error) throw error;
+    return { keys: (data || []).map((r) => r.id) };
+  },
+  async delete(key) {
+    const { error } = await _supabase.from("app_state").delete().eq("id", key);
+    if (error) throw error;
+  },
+};
+
+/* ====================== APLICATIVO ====================== */
+
+const STATUS = {
+  disponivel: { label: "Disponível", cls: "bg-green-100 text-green-700" },
+  alugada: { label: "Alugada", cls: "bg-blue-100 text-blue-700" },
+  manutencao: { label: "Em manutenção", cls: "bg-amber-100 text-amber-700" },
+};
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const JUROS_PCT = 10;   // juros por atraso
+const DIAS_JUROS = 7;   // aplicado 7 dias após o vencimento da parcela
+
+const brl = (n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const today = () => new Date().toISOString().slice(0, 10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const round2 = (x) => Math.round((Number(x) || 0) * 100) / 100;
+function addDays(iso, n) { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function daysBetween(a, b) { return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000); }
+function fmtDate(iso) { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; }
+function mesLabel(ym) { const [y, m] = ym.split("-"); return `${MESES[Number(m) - 1]}/${y}`; }
+const valSem = (m) => Number(m.valor ?? m.valorSemana ?? 0);
+const motoEntrada = (m) => Number(m.valorEntrada ?? 0);
+function diasAtraso(pv) { if (!pv) return 0; return daysBetween(pv, today()); }
+function proxSemana(firstDue, ref) { if (firstDue >= ref) return firstDue; let d = firstDue, g = 0; while (d < ref && g < 2000) { d = addDays(d, 7); g++; } return d; }
+const telList = (l) => (l && l.telefones && l.telefones.length ? l.telefones : (l && l.telefone ? [l.telefone] : [])).filter(Boolean);
+const telStr = (l) => telList(l).join(" · ");
+
+// ===== motor do saldo devedor (cobrança semanal + proporcional + juros) =====
+function contratoInfo(m, caixa) {
+  if (!m.vinculo) return null;
+  const v = m.vinculo;
+  const valor = valSem(m);
+  const inicio = v.dataInicio || today();
+  const firstDue = v.primeiroVencimento || v.proximoVencimento || inicio;
+  const fim = (v.dataSaida && v.dataSaida < today()) ? v.dataSaida : today();
+  // cobranças (parcelas)
+  const charges = [];
+  if (firstDue <= fim) {
+    const prDays = daysBetween(inicio, firstDue);
+    if (prDays > 0) charges.push({ data: firstDue, valor: round2(valor / 7 * prDays), tipo: "prorata" });
+    else charges.push({ data: firstDue, valor: valor, tipo: "aluguel" });
+  }
+  let due = addDays(firstDue, 7), g = 0;
+  while (due <= fim && g < 520) { charges.push({ data: due, valor: valor, tipo: "aluguel" }); due = addDays(due, 7); g++; }
+  // pagamentos do contrato
+  const pays = caixa.filter((c) => c.cicloId === v.cicloId && c.pagamentoContrato).map((c) => ({ data: c.data, valor: Number(c.valor) || 0 }));
+  // eventos
+  const events = [];
+  charges.forEach((c, i) => events.push({ date: c.data, kind: "charge", i, valor: c.valor }));
+  charges.forEach((c, i) => { const jd = addDays(c.data, DIAS_JUROS); if (jd <= fim) events.push({ date: jd, kind: "juros", i }); });
+  pays.forEach((p) => events.push({ date: p.data, kind: "pay", valor: p.valor }));
+  const ord = { charge: 0, pay: 1, juros: 2 };
+  events.sort((a, b) => a.date.localeCompare(b.date) || ord[a.kind] - ord[b.kind]);
+  const open = []; let jurosTotal = 0; const jurosDone = {};
+  events.forEach((ev) => {
+    if (ev.kind === "charge") open.push({ data: ev.date, original: ev.valor, restante: ev.valor, i: ev.i, juros: false });
+    else if (ev.kind === "juros") {
+      const oc = open.find((o) => o.i === ev.i && !o.juros);
+      const rest = oc ? oc.restante : 0;
+      if (rest > 0.005 && !jurosDone[ev.i]) { const jv = round2(rest * JUROS_PCT / 100); open.push({ data: charges[ev.i].data, original: jv, restante: jv, i: "j" + ev.i, juros: true }); jurosTotal += jv; jurosDone[ev.i] = true; }
+    } else {
+      let rem = ev.valor; open.sort((a, b) => a.data.localeCompare(b.data));
+      for (const o of open) { if (rem <= 0) break; if (o.restante <= 0) continue; const use = Math.min(o.restante, rem); o.restante -= use; rem -= use; }
+    }
+  });
+  const saldo = round2(open.reduce((s, o) => s + Math.max(0, o.restante), 0));
+  const totalCobrado = round2(charges.reduce((s, c) => s + c.valor, 0) + jurosTotal);
+  const totalPago = round2(pays.reduce((s, p) => s + p.valor, 0));
+  const emAberto = open.filter((o) => o.restante > 0.005).sort((a, b) => a.data.localeCompare(b.data));
+  const maisAntigo = emAberto.length ? emAberto[0].data : null;
+  const vencido = saldo > 0.005 && maisAntigo && maisAntigo < today();
+  const atraso = vencido ? daysBetween(maisAntigo, today()) : 0;
+  const charOpen = emAberto.filter((o) => !o.juros);
+  const proximoVenc = charOpen.length ? charOpen[0].data : proxSemana(firstDue, addDays(today(), 1));
+  const jurosDe = {};
+  open.forEach((o) => { if (o.juros) jurosDe[String(o.i).slice(1)] = o; });
+  const parcelas = open.filter((o) => !o.juros).slice().sort((a, b) => a.data.localeCompare(b.data)).map((o) => {
+    const j = jurosDe[String(o.i)];
+    const baseRest = Math.max(0, o.restante);
+    const jurosRest = j ? Math.max(0, j.restante) : 0;
+    const rest = round2(baseRest + jurosRest);
+    const venc = rest > 0.005 && o.data < today();
+    return { data: o.data, original: round2(o.original + (j ? j.original : 0)), base: round2(o.original), restante: rest, juros: round2(jurosRest), paga: rest <= 0.005, vencido: venc, atraso: venc ? daysBetween(o.data, today()) : 0 };
+  });
+  return { saldo, totalCobrado, totalPago, jurosTotal, proximoVenc, atraso, vencido, parcelas };
+}
+
+function relatorioMoto(m, caixa, cicloId) {
+  const atual = cicloId !== undefined && cicloId === m.cicloAtual;
+  const lanc = caixa.filter((c) => c.motoId === m.id && (cicloId === undefined || c.cicloId === cicloId || (atual && !c.cicloId)));
+  const recebido = lanc.filter((c) => c.tipo === "entrada" && c.pagamentoContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const multaTransito = lanc.filter((c) => c.tipo === "entrada" && c.multa).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const entradaContrato = lanc.filter((c) => c.tipo === "entrada" && c.entradaContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const outras = lanc.filter((c) => c.tipo === "entrada" && !c.pagamentoContrato && !c.multa && !c.entradaContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const despesas = lanc.filter((c) => c.tipo === "saida" && !c.comissaoPaga).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const comissaoPaga = lanc.filter((c) => c.tipo === "saida" && c.comissaoPaga).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const comissaoDevida = (recebido + entradaContrato) * (Number(m.taxaAdmin) || 0) / 100;
+  const comissaoApagar = comissaoDevida - comissaoPaga;
+  const resultado = recebido + multaTransito + entradaContrato + outras - despesas - comissaoDevida;
+  const nPg = lanc.filter((c) => c.pagamentoContrato).length;
+  return { recebido, multaTransito, entradaContrato, outras, despesas, comissaoDevida, comissaoPaga, comissaoApagar, resultado, nPg };
+}
+function histMoto(m, caixa) {
+  const pg = caixa.filter((c) => c.motoId === m.id && c.pagamentoContrato);
+  return { nPgTotal: pg.length, totalRecebido: pg.reduce((s, c) => s + (Number(c.valor) || 0), 0) };
+}
+
+function Login({ adminAuth, investidores, onCreateAdmin, onLogin }) {
+  const [u, setU] = useState(""); const [p, setP] = useState(""); const [p2, setP2] = useState(""); const [err, setErr] = useState("");
+  const creating = !adminAuth;
+  const submit = () => {
+    setErr("");
+    if (creating) { if (!u.trim() || !p) return setErr("Preencha usuário e senha."); if (p !== p2) return setErr("As senhas não conferem."); onCreateAdmin(u.trim(), p); return; }
+    if (u.trim() === adminAuth.user && p === adminAuth.senha) { onLogin({ role: "admin", nome: adminAuth.user }); return; }
+    const inv = investidores.find((i) => i.user === u.trim() && i.senha === p);
+    if (inv) { onLogin({ role: "investor", investorId: inv.id, nome: inv.nome }); return; }
+    setErr("Usuário ou senha incorretos.");
+  };
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-black p-4">
+      <div className="bg-neutral-900 border border-green-500/30 rounded-2xl shadow-2xl w-full max-w-sm p-7">
+        <div className="flex items-center justify-center gap-2 mb-1"><Bike className="w-8 h-8 text-green-500" /><h1 className="text-2xl font-extrabold text-white">Moto<span className="text-green-500">Vibe</span></h1></div>
+        <p className="text-center text-xs tracking-[0.3em] text-green-500/80 mb-4">S Y S T E M</p>
+        <p className="text-sm text-neutral-400 mb-5 text-center">{creating ? "Crie o acesso de administrador." : "Acesso de administrador ou investidor."}</p>
+        <div className="space-y-3">
+          <input className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-2 placeholder-neutral-500 focus:border-green-500 outline-none" placeholder="Usuário" value={u} onChange={(e) => setU(e.target.value)} />
+          <input type="password" className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-2 placeholder-neutral-500 focus:border-green-500 outline-none" placeholder="Senha" value={p} onChange={(e) => setP(e.target.value)} />
+          {creating && <input type="password" className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg px-3 py-2 placeholder-neutral-500 focus:border-green-500 outline-none" placeholder="Confirmar senha" value={p2} onChange={(e) => setP2(e.target.value)} />}
+          {err && <p className="text-sm text-red-400">{err}</p>}
+          <button onClick={submit} className="w-full bg-green-500 hover:bg-green-400 text-black rounded-lg py-2.5 font-bold transition-colors">{creating ? "Criar administrador" : "Entrar"}</button>
+        </div>
+        <p className="text-[11px] text-neutral-500 mt-5 text-center">Moto Vibe - System</p>
+      </div>
+    </div>
+  );
+}
+
+function MotoForm({ initial, investidores, onSave, onCancel }) {
+  const [f, setF] = useState(initial ? { ...initial, valor: valSem(initial), valorEntrada: motoEntrada(initial), proprietarioId: initial.proprietarioId || "" } : { modelo: "", placa: "", ano: "", valor: "", valorEntrada: "", taxaAdmin: "", status: "disponivel", proprietarioId: "" });
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  return (
+    <div className="bg-slate-50 border rounded-xl p-4 space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <input className="border rounded-lg px-3 py-2 col-span-2" placeholder="Modelo (ex: Honda CG 160)" value={f.modelo} onChange={(e) => set("modelo", e.target.value)} />
+        <input className="border rounded-lg px-3 py-2" placeholder="Placa" value={f.placa} onChange={(e) => set("placa", e.target.value)} />
+        <input className="border rounded-lg px-3 py-2" placeholder="Ano" value={f.ano} onChange={(e) => set("ano", e.target.value)} />
+        <div><label className="text-xs text-slate-500">Valor semanal do aluguel (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0,00" value={f.valor} onChange={(e) => set("valor", e.target.value)} /></div>
+        <div><label className="text-xs text-slate-500">Valor da entrada (R$)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0,00" value={f.valorEntrada} onChange={(e) => set("valorEntrada", e.target.value)} /></div>
+        <div className="col-span-2"><label className="text-xs text-slate-500">Comissão do gestor (%)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0" value={f.taxaAdmin} onChange={(e) => set("taxaAdmin", e.target.value)} /></div>
+        <div className="col-span-2"><label className="text-xs text-slate-500">Pertence a (investidor)</label>
+          <select className="border rounded-lg px-3 py-2 w-full" value={f.proprietarioId} onChange={(e) => set("proprietarioId", e.target.value)}>
+            <option value="">Próprio (meu)</option>{investidores.map((i) => <option key={i.id} value={i.id}>{i.nome}</option>)}
+          </select>
+        </div>
+        <select className="border rounded-lg px-3 py-2 col-span-2" value={f.status} onChange={(e) => set("status", e.target.value)}>
+          {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+      </div>
+      <p className="text-[11px] text-slate-400">A cobrança é semanal. O saldo do contrato soma R$ {Number(f.valor) || 0} a cada semana, com a 1ª semana proporcional e juros de {JUROS_PCT}% após {DIAS_JUROS} dias de atraso.</p>
+      <div className="flex gap-2">
+        <button onClick={() => f.modelo.trim() && onSave({ ...f, valor: Number(f.valor) || 0, valorEntrada: Number(f.valorEntrada) || 0 })} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button>
+        <button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function LocForm({ initial, onSave, onCancel }) {
+  const [f, setF] = useState(initial ? { ...initial } : { nome: "", documento: "", obs: "", endereco: "" });
+  const [telefones, setTelefones] = useState(initial && initial.telefones && initial.telefones.length ? initial.telefones : (initial && initial.telefone ? [initial.telefone] : [""]));
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const setTel = (i, v) => setTelefones((t) => t.map((x, j) => (j === i ? v : x)));
+  const addTel = () => setTelefones((t) => [...t, ""]);
+  const delTel = (i) => setTelefones((t) => (t.length > 1 ? t.filter((_, j) => j !== i) : t));
+  const salvar = () => { if (!f.nome.trim()) return; const tel = telefones.map((t) => t.trim()).filter(Boolean); onSave({ ...f, telefones: tel, telefone: tel[0] || "" }); };
+  return (
+    <div className="bg-slate-50 border rounded-xl p-4 space-y-2">
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nome" value={f.nome} onChange={(e) => set("nome", e.target.value)} />
+      <div>
+        <label className="text-xs text-slate-500">Telefones</label>
+        {telefones.map((t, i) => (
+          <div key={i} className="flex gap-2 mt-1">
+            <input className="border rounded-lg px-3 py-2 flex-1" placeholder={`Telefone ${i + 1}`} value={t} onChange={(e) => setTel(i, e.target.value)} />
+            {telefones.length > 1 && <button onClick={() => delTel(i)} className="px-2 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>}
+          </div>
+        ))}
+        <button onClick={addTel} className="mt-1 w-full text-sm text-slate-600 border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Adicionar telefone</button>
+      </div>
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="CPF / Documento" value={f.documento} onChange={(e) => set("documento", e.target.value)} />
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Endereço" value={f.endereco || ""} onChange={(e) => set("endereco", e.target.value)} />
+      <input className="border rounded-lg px-3 py-2 w-full" placeholder="Observações" value={f.obs || ""} onChange={(e) => set("obs", e.target.value)} />
+      <div className="flex gap-2"><button onClick={salvar} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Salvar</button><button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div>
+    </div>
+  );
+}
+
+function VincForm({ mode, list, valorSem, onSave, onCancel }) {
+  const [sel, setSel] = useState(""); const [venc, setVenc] = useState(addDays(today(), 7));
+  const [lancar, setLancar] = useState(true); const [entradaVal, setEntradaVal] = useState("");
+  const selItem = list.find((x) => x.id === sel); const entrada = selItem ? (selItem.entrada || 0) : 0;
+  const prDays = daysBetween(today(), venc);
+  const semanaRef = selItem && selItem.valorSem != null ? selItem.valorSem : (valorSem || 0);
+  const prValor = prDays > 0 && prDays < 7 ? round2(semanaRef / 7 * prDays) : semanaRef;
+  useEffect(() => { setEntradaVal(entrada > 0 ? String(entrada) : ""); }, [sel]);
+  return (
+    <div className="mt-2 bg-slate-50 border rounded-lg p-3 space-y-2">
+      {list.length === 0 ? <p className="text-sm text-slate-500">{mode === "fromMoto" ? "Cadastre um locatário primeiro." : "Nenhuma moto disponível."}</p> : <>
+        <select className="border rounded-lg px-3 py-2 w-full text-sm" value={sel} onChange={(e) => setSel(e.target.value)}>
+          <option value="">{mode === "fromMoto" ? "Selecione o locatário" : "Selecione a moto"}</option>
+          {list.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+        </select>
+        <label className="text-xs text-slate-500 block">Data do 1º vencimento</label>
+        <input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={venc} onChange={(e) => setVenc(e.target.value)} />
+        {semanaRef > 0 && <p className="text-[11px] text-slate-500">1ª cobrança ({prDays > 0 && prDays < 7 ? `proporcional, ${prDays} dia(s)` : "semana cheia"}): <b>{brl(prValor)}</b></p>}
+        {entrada > 0 && <div className="space-y-1">
+          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={lancar} onChange={(e) => setLancar(e.target.checked)} />Lançar entrada (cadastrada: {brl(entrada)})</label>
+          {lancar && <div><label className="text-xs text-slate-500">Valor recebido (pode ser parcial)</label><input type="number" className="border rounded-lg px-3 py-2 w-full text-sm" value={entradaVal} onChange={(e) => setEntradaVal(e.target.value)} /></div>}
+        </div>}
+        <div className="flex gap-2"><button onClick={() => sel && onSave(sel, venc, entrada > 0 && lancar ? (Number(entradaVal) || 0) : 0)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm">Vincular</button><button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div>
+      </>}
+    </div>
+  );
+}
+
+function PagamentoForm({ moto, saldo, parcelas, onSave, onCancel }) {
+  const [valor, setValor] = useState(saldo > 0 ? String(saldo.toFixed(2)) : "");
+  const [multaTransito, setMultaTransito] = useState("");
+  const [despesas, setDespesas] = useState([]);
+  const [dVal, setDVal] = useState(""); const [dDesc, setDDesc] = useState(""); const [data, setData] = useState(today());
+  const pct = Number(moto.taxaAdmin) || 0;
+  const comissao = (Number(valor) || 0) * pct / 100;
+  const totalDesp = despesas.reduce((s, d) => s + (Number(d.valor) || 0), 0);
+  const addDespesa = () => { const v = Number(dVal) || 0; if (v <= 0) return; setDespesas((s) => [...s, { valor: v, descricao: dDesc.trim() }]); setDVal(""); setDDesc(""); };
+  return (
+    <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+      <div className="text-xs text-slate-600">Saldo devedor atual: <b>{brl(saldo)}</b></div>
+      {parcelas && parcelas.some((p) => !p.paga) && <div className="bg-white border border-green-200 rounded-lg p-2 space-y-1">
+        <div className="text-[11px] font-medium text-slate-500">Vencimentos em aberto</div>
+        {parcelas.filter((p) => !p.paga).map((p, i) => <div key={i} className="flex justify-between text-xs"><span className={p.vencido ? "text-red-600" : "text-slate-600"}>Semana {fmtDate(p.data)}{p.vencido ? ` · ${p.atraso}d em atraso` : " · a vencer"}{p.juros > 0.005 ? ` · inclui ${brl(p.juros)} juros` : ""}</span><b className={p.vencido ? "text-red-600" : "text-slate-700"}>{brl(p.restante)}</b></div>)}
+      </div>}
+      <div><label className="text-xs text-slate-600">Valor pago (abate o saldo)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+      <div><label className="text-xs text-slate-600">Multa de trânsito (não entra na comissão)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0,00" value={multaTransito} onChange={(e) => setMultaTransito(e.target.value)} /></div>
+      <div className="border-t border-green-200 pt-2">
+        <label className="text-xs text-slate-600">Despesas da moto (cada uma vira uma saída)</label>
+        {despesas.map((d, i) => <div key={i} className="flex items-center justify-between bg-white border rounded-lg px-3 py-1.5 mt-1 text-sm"><span className="truncate">{d.descricao || "Despesa"} · <b className="text-red-500">{brl(d.valor)}</b></span><button onClick={() => setDespesas((s) => s.filter((_, j) => j !== i))} className="text-slate-300 ml-2"><X className="w-4 h-4" /></button></div>)}
+        <div className="grid grid-cols-2 gap-2 mt-1"><input type="number" className="border rounded-lg px-3 py-2 text-sm" placeholder="Valor (R$)" value={dVal} onChange={(e) => setDVal(e.target.value)} /><input className="border rounded-lg px-3 py-2 text-sm" placeholder="Descrição" value={dDesc} onChange={(e) => setDDesc(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addDespesa()} /></div>
+        <button onClick={addDespesa} className="w-full mt-1 text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Adicionar despesa</button>
+      </div>
+      <div><label className="text-xs text-slate-600">Data</label><input type="date" className="border rounded-lg px-3 py-2 w-full" value={data} onChange={(e) => setData(e.target.value)} /></div>
+      <div className="text-xs bg-white border rounded-lg p-2 text-slate-600 flex justify-between"><span>Comissão ({pct}%): <b>{brl(comissao)}</b></span><span>Novo saldo: <b>{brl(Math.max(0, saldo - (Number(valor) || 0)))}</b></span></div>
+      <div className="flex gap-2"><button onClick={() => onSave(Number(valor) || 0, Number(multaTransito) || 0, despesas, data)} className="flex-1 bg-green-600 text-white rounded-lg py-2 text-sm font-medium">Confirmar</button><button onClick={onCancel} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div>
+    </div>
+  );
+}
+
+function RelatorioCard({ m, caixa, historico, saldo, onPagarComissao }) {
+  const r = relatorioMoto(m, caixa, m.cicloAtual);
+  const [pagando, setPagando] = useState(false); const [val, setVal] = useState(""); const [dt, setDt] = useState(today());
+  const [verExtrato, setVerExtrato] = useState(false);
+  const mov = caixa.filter((c) => c.motoId === m.id).slice().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+  return (
+    <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="font-semibold">{m.modelo} · {m.placa}</div>
+      {historico && historico.nPgTotal > 0 && <div className="text-xs text-slate-400 mb-1">Já recebeu {historico.nPgTotal} pagamento(s) no total · {brl(historico.totalRecebido)} (todos os locatários)</div>}
+      {m.cicloAtual && <div className="text-[11px] text-blue-500 mb-2">Valores: contrato atual</div>}
+      <div className="space-y-1 text-sm">
+        {saldo != null && <Row label="Saldo devedor (em aberto)" val={brl(saldo)} cls={saldo > 0.005 ? "text-red-600" : "text-green-600"} bold />}
+        <Row label={`Recebido do contrato (${r.nPg} pgto)`} val={brl(r.recebido)} cls="text-green-600" />
+        <Row label="Multa de trânsito" val={brl(r.multaTransito)} cls="text-green-600" />
+        {r.entradaContrato > 0 && <Row label="Entrada de contrato" val={brl(r.entradaContrato)} cls="text-green-600" />}
+        {r.outras > 0 && <Row label="Outras entradas" val={brl(r.outras)} cls="text-green-600" />}
+        {r.despesas > 0 && <Row label="Despesas (saídas)" val={`− ${brl(r.despesas)}`} cls="text-red-500" />}
+        <div className="border-t my-1" />
+        <Row label={`Comissão devida (${m.taxaAdmin || 0}%)`} val={brl(r.comissaoDevida)} cls="text-amber-600" />
+        <div className="border-t my-1" />
+        <Row label="Resultado para você" val={brl(r.resultado)} bold cls={r.resultado >= 0 ? "text-green-600" : "text-red-500"} />
+      </div>
+      <button onClick={() => setVerExtrato((v) => !v)} className="mt-2 w-full text-xs text-slate-500 border border-slate-200 rounded-lg py-1.5">{verExtrato ? "Ocultar extrato" : `Ver extrato (${mov.length} lançamento${mov.length !== 1 ? "s" : ""})`}</button>
+      {verExtrato && <div className="mt-2 border-t pt-2 space-y-1.5">
+        {mov.length === 0 && <p className="text-xs text-slate-400 text-center py-1">Nenhum lançamento no período.</p>}
+        {mov.map((c) => <div key={c.id} className="flex justify-between items-start text-xs gap-2">
+          <div className="min-w-0"><div className="text-slate-600">{fmtDate(c.data)}</div><div className="text-slate-400 truncate">{c.descricao || (c.tipo === "saida" ? "Saída" : "Entrada")}</div></div>
+          <b className={`whitespace-nowrap ${c.tipo === "saida" ? "text-red-500" : "text-green-600"}`}>{c.tipo === "saida" ? "− " : "+ "}{brl(Number(c.valor) || 0)}</b>
+        </div>)}
+      </div>}
+    </div>
+  );
+}
+
+function Row({ label, val, cls = "text-slate-700", bold }) {
+  return <div className="flex justify-between"><span className="text-slate-500">{label}</span><span className={`${cls} ${bold ? "font-bold" : ""}`}>{val}</span></div>;
+}
+function KPI({ label, val, cls = "text-slate-800" }) {
+  return <div className="bg-white rounded-xl p-3 shadow-sm"><div className="text-xs text-slate-500">{label}</div><div className={`font-bold text-lg ${cls}`}>{val}</div></div>;
+}
+function PeriodoSelect({ caixa, periodo, setPeriodo }) {
+  const meses = Array.from(new Set(caixa.map((c) => (c.data || "").slice(0, 7)).filter(Boolean))).sort().reverse();
+  return <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={periodo} onChange={(e) => setPeriodo(e.target.value)}><option value="tudo">Todo o período</option>{meses.map((ym) => <option key={ym} value={ym}>{mesLabel(ym)}</option>)}</select>;
+}
+
+function RelatoriosView({ motos, locatarios, caixa, historico, periodo, setPeriodo, onPagarComissao, hideTotal }) {
+  const [relModo, setRelModo] = useState("placa");
+  const [filtroRel, setFiltroRel] = useState("");
+  const [filtroLoc, setFiltroLoc] = useState("");
+  const caixaFiltrado = periodo === "tudo" ? caixa : caixa.filter((c) => (c.data || "").startsWith(periodo));
+  const motoIds = new Set(motos.map((m) => m.id));
+  const relMotos = filtroRel ? motos.filter((m) => m.id === filtroRel) : motos;
+  const dRec = motos.reduce((s, m) => { const r = relatorioMoto(m, caixaFiltrado, m.cicloAtual); return s + r.recebido + r.entradaContrato + r.multaTransito + r.outras; }, 0);
+  const saldoTotal = motos.filter((m) => m.vinculo).reduce((s, m) => s + (contratoInfo(m, caixa)?.saldo || 0), 0);
+  let cDev = 0, cPag = 0, dDesp = 0, dRes = 0; motos.forEach((m) => { const r = relatorioMoto(m, caixaFiltrado, m.cicloAtual); cDev += r.comissaoDevida; cPag += r.comissaoPaga; dDesp += r.despesas; dRes += r.resultado; });
+  return (
+    <div className="space-y-3">
+      <PeriodoSelect caixa={caixa} periodo={periodo} setPeriodo={setPeriodo} />
+      <div className="grid grid-cols-2 gap-2">
+        <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={relModo} onChange={(e) => { setRelModo(e.target.value); setFiltroRel(""); setFiltroLoc(""); }}>
+          <option value="placa">Filtrar por placa</option>
+          <option value="locatario">Filtrar por locatário</option>
+        </select>
+        {relModo === "placa"
+          ? <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroRel} onChange={(e) => setFiltroRel(e.target.value)}><option value="">Todas as motos</option>{motos.map((m) => <option key={m.id} value={m.id}>{m.placa || m.modelo}</option>)}</select>
+          : <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroLoc} onChange={(e) => setFiltroLoc(e.target.value)}><option value="">Todos os locatários</option>{locatarios.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}</select>}
+      </div>
+
+      {relModo === "placa" && <>
+        {motos.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto para exibir.</p>}
+        {relMotos.map((m) => <RelatorioCard key={m.id} m={m} caixa={caixaFiltrado} historico={histMoto(m, caixa)} saldo={m.vinculo ? contratoInfo(m, caixa)?.saldo : null} onPagarComissao={onPagarComissao} />)}
+        {!hideTotal && !filtroRel && motos.length > 0 && <div className="bg-slate-800 text-white rounded-xl p-4 space-y-1 text-sm">
+          <div className="font-semibold mb-1">Total geral {periodo !== "tudo" && `· ${mesLabel(periodo)}`}</div>
+          <div className="flex justify-between"><span>Recebido (contrato + entrada + outras)</span><b>{brl(dRec)}</b></div>
+          <div className="flex justify-between"><span>Saldo a receber (em aberto)</span><b>{brl(saldoTotal)}</b></div>
+          <div className="flex justify-between border-t border-slate-600 pt-1"><span>Comissão devida</span><b>{brl(cDev)}</b></div>
+          {dDesp > 0 && <div className="flex justify-between text-red-300"><span>Despesas</span><b>{brl(dDesp)}</b></div>}
+          <div className="flex justify-between border-t border-slate-600 pt-2 mt-1 text-base"><span className="font-semibold">Resultado</span><b className={dRes >= 0 ? "text-green-400" : "text-red-400"}>{brl(dRes)}</b></div>
+        </div>}
+      </>}
+
+      {relModo === "locatario" && (() => {
+        if (locatarios.length === 0) return <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário para exibir.</p>;
+        const locs = filtroLoc ? locatarios.filter((l) => l.id === filtroLoc) : locatarios;
+        return locs.map((l) => {
+          const ativos = motos.filter((m) => m.vinculo?.locatarioId === l.id).map((m) => ({ moto: m, motoNome: `${m.modelo} ${m.placa}`, dataInicio: m.vinculo.dataInicio, dataSaida: null, cicloId: m.vinculo.cicloId, ativo: true }));
+          const hist = (historico || []).filter((h) => h.locatarioId === l.id && motoIds.has(h.motoId)).map((h) => { const mo = motos.find((x) => x.id === h.motoId); return { moto: mo, motoNome: mo ? `${mo.modelo} ${mo.placa}` : (h.motoNome || "Moto removida"), dataInicio: h.dataInicio, dataSaida: h.dataSaida, cicloId: h.cicloId, ativo: false }; });
+          const contratos = [...ativos, ...hist];
+          return (
+            <div key={l.id} className="space-y-2">
+              <div className="bg-white rounded-xl p-4 shadow-sm"><div className="font-semibold">{l.nome}</div><div className="text-sm text-slate-500">{telStr(l)}{telStr(l) ? " · " : ""}{contratos.length} contrato(s)</div>{l.endereco && <div className="text-xs text-slate-400 mt-0.5">📍 {l.endereco}</div>}</div>
+              {contratos.length === 0 && <p className="text-center text-slate-400 text-sm py-2">Sem contratos registrados.</p>}
+              {contratos.map((ct, idx) => {
+                const r = ct.moto ? relatorioMoto(ct.moto, caixaFiltrado, ct.cicloId) : null;
+                const saldo = ct.ativo && ct.moto ? contratoInfo(ct.moto, caixa)?.saldo : null;
+                return (
+                  <div key={idx} className="bg-white rounded-xl p-4 shadow-sm">
+                    <div className="flex justify-between items-start">
+                      <div><div className="font-semibold">{ct.motoNome}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">Alugada em {fmtDate(ct.dataInicio)} · {ct.ativo ? "em andamento" : `saída em ${fmtDate(ct.dataSaida)}`}</div>
+                        <div className="text-xs text-slate-400">Tempo de contrato: {daysBetween(ct.dataInicio, ct.dataSaida || today())} dia(s)</div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${ct.ativo ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>{ct.ativo ? "Ativo" : "Encerrado"}</span>
+                    </div>
+                    {r && <div className="mt-2 text-sm space-y-1 border-t pt-2">
+                      {saldo != null && <Row label="Saldo devedor" val={brl(saldo)} cls={saldo > 0.005 ? "text-red-600" : "text-green-600"} bold />}
+                      <Row label={`Recebido (${r.nPg} pgto)`} val={brl(r.recebido)} cls="text-green-600" />
+                      <Row label={`Comissão devida (${ct.moto.taxaAdmin || 0}%)`} val={brl(r.comissaoDevida)} cls="text-amber-600" />
+                      <Row label="Resultado para você" val={brl(r.resultado)} bold cls={r.resultado >= 0 ? "text-green-600" : "text-red-500"} />
+                    </div>}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        });
+      })()}
+    </div>
+  );
+}
+
+function Backup({ data, setData }) {
+  const [snaps, setSnaps] = useState([]);
+  const [msg, setMsg] = useState("");
+  const carregar = async () => { try { const r = await window.storage.list("backup:"); setSnaps(((r && r.keys) || []).sort().reverse()); } catch (e) { setSnaps([]); } };
+  useEffect(() => { carregar(); }, []);
+  const baixar = () => {
+    try {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = `backup-motovibe-${today()}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      setMsg("Cópia baixada. Guarde o arquivo em local seguro.");
+    } catch (e) { setMsg("Não foi possível baixar."); }
+  };
+  const restaurar = async (key) => {
+    if (!window.confirm("Restaurar este backup? Os dados atuais serão substituídos pelos do backup.")) return;
+    try { const r = await window.storage.get(key); if (r) { setData({ motos: [], locatarios: [], caixa: [], investidores: [], historico: [], ...JSON.parse(r.value) }); setMsg("Backup restaurado com sucesso."); } } catch (e) { setMsg("Erro ao restaurar."); }
+  };
+  const importar = (e) => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { try { const obj = JSON.parse(reader.result); setData({ motos: [], locatarios: [], caixa: [], investidores: [], historico: [], ...obj }); setMsg("Backup importado com sucesso."); } catch (err) { setMsg("Arquivo inválido."); } };
+    reader.readAsText(file);
+  };
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+        <div className="font-semibold flex items-center gap-2"><Download className="w-5 h-5 text-slate-700" /> Cópia de segurança</div>
+        <p className="text-sm text-slate-500">Baixe uma cópia de todos os dados (motos, locatários, lançamentos). Guarde o arquivo em local seguro — é sua proteção caso algo dê errado com a nuvem.</p>
+        <button onClick={baixar} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Baixar cópia agora</button>
+        <label className="w-full block text-center border border-slate-300 text-slate-700 rounded-lg py-2 text-sm cursor-pointer">Restaurar de um arquivo<input type="file" accept="application/json,.json" onChange={importar} className="hidden" /></label>
+        {msg && <p className="text-xs text-center text-green-600">{msg}</p>}
+      </div>
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+        <div className="font-semibold">Backups automáticos</div>
+        <p className="text-sm text-slate-500">O sistema guarda sozinho uma cópia por dia (as 10 mais recentes). Serve pra desfazer uma alteração feita por engano.</p>
+        {snaps.length === 0 && <p className="text-xs text-slate-400">Nenhum backup automático ainda. Ele é criado quando você entra no sistema.</p>}
+        {snaps.map((k) => (
+          <div key={k} className="flex justify-between items-center border-t pt-2">
+            <span className="text-sm text-slate-600">{fmtDate(k.replace("backup:", ""))}</span>
+            <button onClick={() => restaurar(k)} className="text-xs border border-slate-300 text-slate-700 rounded-lg px-3 py-1">Restaurar</button>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-slate-400 px-1">Os backups automáticos ficam no mesmo banco (Supabase). Para proteção total contra perda do banco, baixe a cópia manual de tempos em tempos e guarde fora do sistema (no seu computador, e-mail ou nuvem pessoal).</p>
+    </div>
+  );
+}
+
+function App() {
+  const [loaded, setLoaded] = useState(false);
+  const [adminAuth, setAdminAuth] = useState(null);
+  const [session, setSession] = useState(null);
+  const [tab, setTab] = useState("dash");
+  const [data, setData] = useState({ motos: [], locatarios: [], caixa: [], investidores: [], historico: [] });
+  const [periodo, setPeriodo] = useState("tudo");
+  const [filtroVenc, setFiltroVenc] = useState(""); const [filtroRel, setFiltroRel] = useState("");
+  const [relModo, setRelModo] = useState("placa"); const [filtroLoc, setFiltroLoc] = useState("");
+  const [invTab, setInvTab] = useState("painel");
+  const firstSave = useRef(true);
+
+  useEffect(() => { (async () => {
+    try { const a = await window.storage.get("auth"); if (a) setAdminAuth(JSON.parse(a.value)); } catch (e) {}
+    try { const d = await window.storage.get("app-data"); if (d) { const p = JSON.parse(d.value); setData({ motos: [], locatarios: [], caixa: [], investidores: [], historico: [], ...p }); } } catch (e) {}
+    setLoaded(true);
+  })(); }, []);
+  useEffect(() => { if (!loaded) return; if (firstSave.current) { firstSave.current = false; return; } (async () => { try { await window.storage.set("app-data", JSON.stringify(data)); } catch (e) {} })(); }, [data, loaded]);
+
+  useEffect(() => {
+    if (!loaded || !session || session.role !== "admin") return;
+    (async () => {
+      try {
+        const key = "backup:" + today();
+        const r = await window.storage.list("backup:");
+        const keys = (r && r.keys) || [];
+        if (!keys.includes(key)) {
+          await window.storage.set(key, JSON.stringify(data));
+          const all = [...keys, key].sort();
+          for (const k of all.slice(0, Math.max(0, all.length - 10))) { try { await window.storage.delete(k); } catch (e) {} }
+        }
+      } catch (e) { console.error("Backup automático:", e); }
+    })();
+  }, [loaded, session]);
+
+  const createAdmin = async (user, senha) => { const a = { user, senha }; setAdminAuth(a); setSession({ role: "admin", nome: user }); try { await window.storage.set("auth", JSON.stringify(a)); } catch (e) {} };
+  const upd = (key, fn) => setData((s) => ({ ...s, [key]: fn(s[key] || []) }));
+
+  const [editMoto, setEditMoto] = useState(null); const [addMoto, setAddMoto] = useState(false);
+  const [editLoc, setEditLoc] = useState(null); const [addLoc, setAddLoc] = useState(false);
+  const [vincMoto, setVincMoto] = useState(null); const [vincLoc, setVincLoc] = useState(null); const [payMoto, setPayMoto] = useState(null);
+  const [saindo, setSaindo] = useState(null); const [dataSaida, setDataSaida] = useState(today());
+
+  const saveMoto = (f) => { if (f.id) upd("motos", (m) => m.map((x) => x.id === f.id ? { ...x, ...f } : x)); else upd("motos", (m) => [...m, { ...f, id: uid(), vinculo: null }]); setEditMoto(null); setAddMoto(false); };
+  const delMoto = (id) => { upd("motos", (m) => m.filter((x) => x.id !== id)); upd("caixa", (c) => c.map((x) => x.motoId === id ? { ...x, motoId: null } : x)); };
+  const saveLoc = (f) => { if (f.id) upd("locatarios", (l) => l.map((x) => x.id === f.id ? { ...x, ...f } : x)); else upd("locatarios", (l) => [...l, { ...f, id: uid() }]); setEditLoc(null); setAddLoc(false); };
+  const delLoc = (id) => { upd("locatarios", (l) => l.filter((x) => x.id !== id)); upd("motos", (m) => m.map((x) => x.vinculo?.locatarioId === id ? { ...x, vinculo: null, status: "disponivel" } : x)); };
+  const criarVinculo = (motoId, locatarioId, primeiroVenc, entradaVal) => {
+    const ciclo = uid();
+    upd("motos", (ms) => ms.map((x) => x.id === motoId ? { ...x, status: "alugada", cicloAtual: ciclo, vinculo: { locatarioId, dataInicio: today(), primeiroVencimento: primeiroVenc, cicloId: ciclo } } : x));
+    if (entradaVal > 0) { const loc = data.locatarios.find((l) => l.id === locatarioId); upd("caixa", (c) => [{ id: uid(), tipo: "entrada", entradaContrato: true, valor: entradaVal, descricao: `Entrada de contrato ${loc?.nome || ""}`, motoId, data: today(), cicloId: ciclo }, ...c]); }
+  };
+  const encerrarContrato = (motoId, dtSaida) => {
+    const m = data.motos.find((x) => x.id === motoId);
+    if (m?.vinculo) upd("historico", (h) => [{ id: uid(), motoId, locatarioId: m.vinculo.locatarioId, locatarioNome: data.locatarios.find((l) => l.id === m.vinculo.locatarioId)?.nome || "", cicloId: m.vinculo.cicloId, dataInicio: m.vinculo.dataInicio, dataSaida: dtSaida }, ...h]);
+    upd("motos", (ms) => ms.map((x) => x.id === motoId ? { ...x, vinculo: null, status: "disponivel" } : x));
+    setSaindo(null);
+  };
+  const pagarComissao = (m, valor, dt) => upd("caixa", (c) => [{ id: uid(), tipo: "saida", comissaoPaga: true, valor, descricao: `Comissão gestor — ${m.modelo} ${m.placa}`, motoId: m.id, data: dt }, ...c]);
+
+  if (!loaded) return <div className="min-h-screen flex items-center justify-center text-slate-400">Carregando…</div>;
+  if (!session) return <Login adminAuth={adminAuth} investidores={data.investidores} onCreateAdmin={createAdmin} onLogin={setSession} />;
+
+  const locName = (id) => data.locatarios.find((l) => l.id === id)?.nome || "—";
+  const invName = (id) => data.investidores.find((i) => i.id === id)?.nome;
+  const motoDoLoc = (lid) => data.motos.find((m) => m.vinculo?.locatarioId === lid);
+  const motosDisponiveis = data.motos.filter((m) => !m.vinculo);
+  const caixaFiltrado = periodo === "tudo" ? data.caixa : data.caixa.filter((c) => (c.data || "").startsWith(periodo));
+
+  if (session.role === "investor") {
+    const minhas = data.motos.filter((m) => m.proprietarioId === session.investorId);
+    const minhasIds = new Set(minhas.map((m) => m.id));
+    const meusLocIds = new Set();
+    minhas.forEach((m) => { if (m.vinculo) meusLocIds.add(m.vinculo.locatarioId); });
+    (data.historico || []).forEach((h) => { if (minhasIds.has(h.motoId)) meusLocIds.add(h.locatarioId); });
+    const meusLocatarios = data.locatarios.filter((l) => meusLocIds.has(l.id));
+    const meuHistorico = (data.historico || []).filter((h) => minhasIds.has(h.motoId));
+    const caixaInv = periodo === "tudo" ? data.caixa : data.caixa.filter((c) => (c.data || "").startsWith(periodo));
+    let tRec = 0, tMulta = 0, tEnt = 0, tOut = 0, tDesp = 0, tComDev = 0, tComPag = 0, tRes = 0;
+    minhas.forEach((m) => { const r = relatorioMoto(m, caixaInv, m.cicloAtual); tRec += r.recebido; tMulta += r.multaTransito; tEnt += r.entradaContrato; tOut += r.outras; tDesp += r.despesas; tComDev += r.comissaoDevida; tComPag += r.comissaoPaga; tRes += r.resultado; });
+    const saldoInv = minhas.filter((m) => m.vinculo).reduce((s, m) => s + (contratoInfo(m, data.caixa)?.saldo || 0), 0);
+    const movInv = caixaInv.filter((c) => minhasIds.has(c.motoId)).slice().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+    const invTabs = [{ k: "painel", label: "Painel", icon: LayoutDashboard }, { k: "relatorios", label: "Relatórios", icon: BarChart3 }];
+    return (
+      <div className="min-h-screen bg-slate-100 text-slate-800">
+        <div className="bg-indigo-700 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><Eye className="w-5 h-5" /> Painel do Investidor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-indigo-600 px-3 py-1.5 rounded-lg"><LogOut className="w-4 h-4" /> Sair</button></div>
+        <div className="flex bg-white border-b sticky top-[52px] z-10">
+          {invTabs.map((t) => { const Icon = t.icon; return (
+            <button key={t.k} onClick={() => setInvTab(t.k)} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 text-xs ${invTab === t.k ? "text-indigo-700 border-b-2 border-indigo-700 font-medium" : "text-slate-400"}`}><Icon className="w-5 h-5" />{t.label}</button>
+          ); })}
+        </div>
+        <div className="max-w-2xl mx-auto p-4 space-y-3">
+          <div className="bg-white rounded-xl p-4 shadow-sm"><div className="text-sm text-slate-500">Olá,</div><div className="font-semibold text-lg">{session.nome}</div><div className="text-sm text-slate-500 mt-1">{minhas.length} moto(s)</div></div>
+
+          {minhas.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto vinculada ao seu acesso.</p>}
+
+          {minhas.length > 0 && invTab === "painel" && <div className="space-y-3">
+            <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
+            <div className="grid grid-cols-2 gap-2">
+              <KPI label="Recebido (contrato)" val={brl(tRec)} cls="text-green-600" />
+              <KPI label="Saldo a receber" val={brl(saldoInv)} cls="text-red-600" />
+              <KPI label="Comissão do gestor" val={brl(tComDev)} cls="text-amber-600" />
+              <KPI label="Despesas" val={brl(tDesp)} cls="text-red-500" />
+            </div>
+            <div className="bg-slate-800 text-white rounded-xl p-4 space-y-1 text-sm">
+              <div className="font-semibold mb-1">Total geral {periodo !== "tudo" && `· ${mesLabel(periodo)}`}</div>
+              <div className="flex justify-between"><span>Recebido de contratos</span><b className="text-green-400">{brl(tRec)}</b></div>
+              {tMulta > 0 && <div className="flex justify-between"><span>Multas de trânsito</span><b className="text-green-400">{brl(tMulta)}</b></div>}
+              {tEnt > 0 && <div className="flex justify-between"><span>Entradas de contrato</span><b className="text-green-400">{brl(tEnt)}</b></div>}
+              {tOut > 0 && <div className="flex justify-between"><span>Outras entradas</span><b className="text-green-400">{brl(tOut)}</b></div>}
+              <div className="flex justify-between text-amber-300 border-t border-slate-600 pt-1"><span>− Comissão do gestor</span><b>{brl(tComDev)}</b></div>
+              <div className="flex justify-between text-red-300"><span>− Despesas</span><b>{brl(tDesp)}</b></div>
+              <div className="flex justify-between border-t border-slate-600 pt-2 mt-1 text-base"><span className="font-semibold">= Resultado pra você</span><b className={tRes >= 0 ? "text-green-400" : "text-red-400"}>{brl(tRes)}</b></div>
+            </div>
+            <p className="text-[11px] text-slate-400 px-1">A comissão do gestor já está descontada no resultado.</p>
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="font-semibold mb-2 text-sm">Extrato {periodo !== "tudo" && `· ${mesLabel(periodo)}`}</div>
+              {movInv.length === 0 && <p className="text-xs text-slate-400">Nenhum lançamento no período.</p>}
+              <div className="space-y-1.5">
+                {movInv.map((c) => { const mo = minhas.find((x) => x.id === c.motoId); return (
+                  <div key={c.id} className="flex justify-between items-start text-xs gap-2 border-b border-slate-100 pb-1.5">
+                    <div className="min-w-0"><div className="text-slate-600">{fmtDate(c.data)}{mo ? ` · ${mo.placa || mo.modelo}` : ""}</div><div className="text-slate-400 truncate">{c.descricao || (c.tipo === "saida" ? "Saída" : "Entrada")}</div></div>
+                    <b className={`whitespace-nowrap ${c.tipo === "saida" ? "text-red-500" : "text-green-600"}`}>{c.tipo === "saida" ? "− " : "+ "}{brl(Number(c.valor) || 0)}</b>
+                  </div>
+                ); })}
+              </div>
+            </div>
+          </div>}
+
+          {minhas.length > 0 && invTab === "relatorios" && <RelatoriosView motos={minhas} locatarios={meusLocatarios} caixa={data.caixa} historico={meuHistorico} periodo={periodo} setPeriodo={setPeriodo} onPagarComissao={null} hideTotal={true} />}
+        </div>
+      </div>
+    );
+  }
+
+  const tabs = [
+    { k: "dash", label: "Painel", icon: LayoutDashboard }, { k: "motos", label: "Motos", icon: Bike }, { k: "locatarios", label: "Locatários", icon: Users },
+    { k: "caixa", label: "Caixa", icon: Wallet }, { k: "vencimentos", label: "Vencimentos", icon: Bell }, { k: "cobrancas", label: "Cobranças", icon: AlertTriangle },
+    { k: "relatorios", label: "Relatórios", icon: BarChart3 }, { k: "config", label: "Investidores", icon: Settings },
+    { k: "backup", label: "Backup", icon: Download },
+  ];
+  const ativos = data.motos.filter((m) => m.vinculo).map((m) => ({ m, ci: contratoInfo(m, data.caixa) }));
+  const vencidosN = ativos.filter((a) => a.ci && a.ci.vencido).length;
+
+  const registrarPagamento = (m, valorPago, multaTransito, despesas, dataPg) => {
+    const ciclo = m.vinculo.cicloId; const nome = locName(m.vinculo.locatarioId); const novos = [];
+    if (valorPago > 0) novos.push({ id: uid(), tipo: "entrada", pagamentoContrato: true, valor: valorPago, descricao: `Pagamento ${nome}`, motoId: m.id, data: dataPg, cicloId: ciclo });
+    if (multaTransito > 0) novos.push({ id: uid(), tipo: "entrada", multa: true, valor: multaTransito, descricao: `Multa de trânsito ${nome}`, motoId: m.id, data: dataPg, cicloId: ciclo });
+    (despesas || []).forEach((d) => { const v = Number(d.valor) || 0; if (v > 0) novos.push({ id: uid(), tipo: "saida", valor: v, descricao: d.descricao || `Despesa ${m.modelo}`, motoId: m.id, data: dataPg, cicloId: ciclo }); });
+    if (novos.length) upd("caixa", (c) => [...novos, ...c]);
+    setPayMoto(null);
+  };
+
+  const q = filtroVenc.trim().toLowerCase();
+  const vencList = ativos.filter(({ m }) => !q || (m.placa || "").toLowerCase().includes(q) || locName(m.vinculo.locatarioId).toLowerCase().includes(q)).sort((a, b) => (b.ci?.atraso || 0) - (a.ci?.atraso || 0));
+  const cobrList = ativos.filter((a) => a.ci && a.ci.vencido).sort((a, b) => b.ci.atraso - a.ci.atraso);
+  const relMotos = filtroRel ? data.motos.filter((m) => m.id === filtroRel) : data.motos;
+  const ult = (() => { const arr = []; const d = new Date(); for (let i = 5; i >= 0; i--) { const dd = new Date(d.getFullYear(), d.getMonth() - i, 1); arr.push({ ym: dd.toISOString().slice(0, 7), label: MESES[dd.getMonth()] }); } return arr; })();
+  const chartData = ult.map((x) => ({ label: x.label, recebido: data.caixa.filter((c) => c.pagamentoContrato && (c.data || "").startsWith(x.ym)).reduce((s, c) => s + (Number(c.valor) || 0), 0) }));
+  const maxCh = Math.max(...chartData.map((x) => x.recebido), 1);
+  const dRec = caixaFiltrado.filter((c) => c.pagamentoContrato).reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const saldoTotal = ativos.reduce((s, a) => s + (a.ci ? a.ci.saldo : 0), 0);
+  let cDev = 0, cPag = 0, cRes = 0; data.motos.forEach((m) => { const r = relatorioMoto(m, caixaFiltrado); cDev += r.comissaoDevida; cPag += r.comissaoPaga; cRes += r.resultado; });
+  const cont = { disponivel: 0, alugada: 0, manutencao: 0 }; data.motos.forEach((m) => { cont[m.status] = (cont[m.status] || 0) + 1; });
+
+  return (
+    <div className="min-h-screen bg-slate-100 text-slate-800">
+      <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><Bike className="w-5 h-5" /> MotoGestor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-slate-700 px-3 py-1.5 rounded-lg"><LogOut className="w-4 h-4" /> Sair</button></div>
+      <div className="flex overflow-x-auto bg-white border-b sticky top-[52px] z-10">
+        {tabs.map((t) => { const Icon = t.icon; return (
+          <button key={t.k} onClick={() => setTab(t.k)} className={`flex-1 min-w-[80px] py-2.5 flex flex-col items-center gap-0.5 text-xs relative ${tab === t.k ? "text-slate-900 border-b-2 border-slate-800 font-medium" : "text-slate-400"}`}>
+            <Icon className="w-5 h-5" />{t.label}
+            {(t.k === "vencimentos" || t.k === "cobrancas") && vencidosN > 0 && <span className="absolute top-1 right-1/4 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{vencidosN}</span>}
+          </button>
+        ); })}
+      </div>
+      <div className="max-w-2xl mx-auto p-4 pb-20">
+
+        {tab === "dash" && <div className="space-y-3">
+          <PeriodoSelect caixa={data.caixa} periodo={periodo} setPeriodo={setPeriodo} />
+          <div className="grid grid-cols-2 gap-2">
+            <KPI label="Recebido (período)" val={brl(dRec)} cls="text-green-600" />
+            <KPI label="Saldo a receber (em aberto)" val={brl(saldoTotal)} cls="text-red-600" />
+            <KPI label="Comissão (total)" val={brl(cDev)} cls="text-amber-600" />
+            <KPI label="Resultado p/ você" val={brl(cRes)} cls={cRes >= 0 ? "text-green-600" : "text-red-500"} />
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <KPI label="Motos" val={data.motos.length} /><KPI label="Alugadas" val={cont.alugada} cls="text-blue-600" /><KPI label="Disponív." val={cont.disponivel} cls="text-green-600" /><KPI label="Manut." val={cont.manutencao} cls="text-amber-600" />
+          </div>
+          {vencidosN > 0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {vencidosN} contrato(s) com saldo vencido. Veja em Cobranças.</div>}
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="font-semibold text-sm mb-3">Recebido — últimos 6 meses</div>
+            <MiniBarChart data={chartData} max={maxCh} />
+          </div>
+        </div>}
+
+        {tab === "motos" && <div className="space-y-3">
+          {!addMoto && !editMoto && <button onClick={() => setAddMoto(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar moto</button>}
+          {addMoto && <MotoForm investidores={data.investidores} onSave={saveMoto} onCancel={() => setAddMoto(false)} />}
+          {data.motos.map((m) => editMoto === m.id ? <MotoForm key={m.id} initial={m} investidores={data.investidores} onSave={saveMoto} onCancel={() => setEditMoto(null)} /> : (
+            <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="flex justify-between items-start">
+                <div><div className="font-semibold">{m.modelo}</div><div className="text-sm text-slate-500">{m.placa} {m.ano && `· ${m.ano}`}</div><div className="text-xs text-slate-400 mt-0.5">Dono: {m.proprietarioId ? (invName(m.proprietarioId) || "—") : "Próprio"}</div></div>
+                <span className={`text-xs px-2 py-1 rounded-full ${STATUS[m.status].cls}`}>{STATUS[m.status].label}</span>
+              </div>
+              <div className="mt-2 text-sm grid grid-cols-3 gap-1 bg-slate-50 rounded-lg p-2">
+                <span>Semana<br /><b>{brl(valSem(m))}</b></span><span>Entrada<br /><b>{brl(motoEntrada(m))}</b></span><span>Comissão<br /><b>{m.taxaAdmin || 0}%</b></span>
+              </div>
+              {m.vinculo ? <>
+                <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2"><div>👤 {locName(m.vinculo.locatarioId)} · saldo {brl(contratoInfo(m, data.caixa)?.saldo || 0)}</div><div className="text-xs text-slate-500">Alugada em {fmtDate(m.vinculo.dataInicio)} · {daysBetween(m.vinculo.dataInicio, today())} dia(s) de contrato</div></div>
+                {saindo === m.id ? <div className="mt-2 bg-slate-50 border rounded-lg p-2 space-y-2"><label className="text-xs text-slate-500">Data de saída da moto</label><input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={dataSaida} onChange={(e) => setDataSaida(e.target.value)} /><div className="flex gap-2"><button onClick={() => encerrarContrato(m.id, dataSaida)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm">Encerrar contrato</button><button onClick={() => setSaindo(null)} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div></div>
+                  : <button onClick={() => { setSaindo(m.id); setDataSaida(today()); }} className="mt-2 w-full text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><Exit className="w-4 h-4" /> Encerrar contrato (registrar saída)</button>}
+              </> : <button onClick={() => setVincMoto(m.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><Link2 className="w-4 h-4" /> Vincular locatário</button>}
+              {vincMoto === m.id && <VincForm mode="fromMoto" valorSem={valSem(m)} list={data.locatarios.map((l) => ({ id: l.id, label: l.nome, entrada: motoEntrada(m), valorSem: valSem(m) }))} onSave={(lid, venc, ent) => { criarVinculo(m.id, lid, venc, ent); setVincMoto(null); }} onCancel={() => setVincMoto(null)} />}
+              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditMoto(m.id)} className="flex items-center gap-1 text-slate-600"><Pencil className="w-4 h-4" /> Editar</button><button onClick={() => delMoto(m.id)} className="flex items-center gap-1 text-red-500"><Trash2 className="w-4 h-4" /> Excluir</button></div>
+            </div>
+          ))}
+          {data.motos.length === 0 && !addMoto && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto cadastrada.</p>}
+        </div>}
+
+        {tab === "locatarios" && <div className="space-y-3">
+          {!addLoc && !editLoc && <button onClick={() => setAddLoc(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar locatário</button>}
+          {addLoc && <LocForm onSave={saveLoc} onCancel={() => setAddLoc(false)} />}
+          {data.locatarios.map((l) => { const moto = motoDoLoc(l.id); const saidas = (data.historico || []).filter((h) => h.locatarioId === l.id); return editLoc === l.id ? <LocForm key={l.id} initial={l} onSave={saveLoc} onCancel={() => setEditLoc(null)} /> : (
+            <div key={l.id} className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="font-semibold">{l.nome}</div>
+              <div className="text-sm text-slate-500">{telStr(l)} {l.documento && `· ${l.documento}`}</div>
+              {l.endereco && <div className="text-sm text-slate-500">📍 {l.endereco}</div>}
+              {l.obs && <div className="text-sm text-slate-400 mt-1">{l.obs}</div>}
+              {moto ? <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2"><div>🏍️ {moto.modelo} · {moto.placa} · saldo {brl(contratoInfo(moto, data.caixa)?.saldo || 0)}</div><div className="text-xs text-slate-500">Alugada em {fmtDate(moto.vinculo.dataInicio)} · {daysBetween(moto.vinculo.dataInicio, today())} dia(s)</div></div>
+                : <button onClick={() => setVincLoc(l.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><Link2 className="w-4 h-4" /> Vincular motocicleta</button>}
+              {saidas.length > 0 && <div className="mt-2 text-xs text-slate-400 space-y-0.5">{saidas.map((s) => <div key={s.id}>Alugada em {fmtDate(s.dataInicio)} · saída em {fmtDate(s.dataSaida)} · {daysBetween(s.dataInicio, s.dataSaida)} dia(s)</div>)}</div>}
+              {vincLoc === l.id && <VincForm mode="fromLoc" list={motosDisponiveis.map((m) => ({ id: m.id, label: `${m.modelo} ${m.placa}`, entrada: motoEntrada(m), valorSem: valSem(m) }))} onSave={(mid, venc, ent) => { criarVinculo(mid, l.id, venc, ent); setVincLoc(null); }} onCancel={() => setVincLoc(null)} />}
+              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditLoc(l.id)} className="flex items-center gap-1 text-slate-600"><Pencil className="w-4 h-4" /> Editar</button><button onClick={() => delLoc(l.id)} className="flex items-center gap-1 text-red-500"><Trash2 className="w-4 h-4" /> Excluir</button></div>
+            </div>
+          ); })}
+          {data.locatarios.length === 0 && !addLoc && <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário cadastrado.</p>}
+        </div>}
+
+        {tab === "caixa" && <Caixa data={data} upd={upd} />}
+
+        {tab === "vencimentos" && <div className="space-y-3">
+          <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Filtrar por placa ou locatário" value={filtroVenc} onChange={(e) => setFiltroVenc(e.target.value)} /></div>
+          {vencList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">{ativos.length ? "Nenhum resultado." : "Nenhum contrato ativo."}</p>}
+          {vencList.map(({ m, ci }) => (
+            <div key={m.id} className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${ci?.vencido ? "border-red-500" : ci?.saldo > 0.005 ? "border-amber-400" : "border-green-400"}`}>
+              <div className="flex justify-between items-start">
+                <div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{locName(m.vinculo.locatarioId)}</div><div className="text-sm mt-1">Próx. vencimento: <b>{fmtDate(ci?.proximoVenc)}</b>{ci?.vencido && ` · ${ci.atraso} dia(s) em atraso`}</div></div>
+                <span className={`text-xs px-2 py-1 rounded-full ${ci?.vencido ? "bg-red-100 text-red-700" : ci?.saldo > 0.005 ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>{ci?.vencido ? "Vencido" : ci?.saldo > 0.005 ? "A vencer" : "Em dia"}</span>
+              </div>
+              <div className="mt-2 text-sm bg-slate-50 rounded-lg p-2 flex justify-between"><span className="text-slate-500">Saldo devedor</span><b className={ci?.saldo > 0.005 ? "text-red-600" : "text-green-600"}>{brl(ci?.saldo || 0)}</b></div>
+              {ci?.saldo > 0.005 && ci?.parcelas?.some((p) => !p.paga) && (() => { const abertas = ci.parcelas.filter((p) => !p.paga); return <div className="mt-2 border border-amber-100 bg-amber-50/60 rounded-lg p-2 space-y-2">
+                <div className="text-xs font-medium text-slate-600">Vencimentos em aberto ({abertas.length})</div>
+                {abertas.map((p, i) => <div key={i} className="bg-white rounded-lg p-2 flex justify-between items-center gap-2">
+                  <div className="text-xs min-w-0"><div className={p.vencido ? "text-red-600 font-medium" : "text-slate-700 font-medium"}>Semana de {fmtDate(p.data)}</div><div className="text-[11px] text-slate-400">{p.vencido ? `${p.atraso} dia(s) em atraso` : "a vencer"}{p.juros > 0.005 ? ` · inclui ${brl(p.juros)} de juros` : ""}</div>{p.restante < p.original - 0.005 && <div className="text-[11px] text-slate-400">pago {brl(p.original - p.restante)} de {brl(p.original)}</div>}</div>
+                  <div className="flex flex-col items-end gap-1 shrink-0"><b className={`text-sm ${p.vencido ? "text-red-600" : "text-slate-700"}`}>{brl(p.restante)}</b>{i === 0 && payMoto !== m.id ? <button onClick={() => registrarPagamento(m, p.restante, 0, [], today())} className="text-[11px] bg-green-600 text-white px-2 py-1 rounded-md flex items-center gap-1"><Check className="w-3 h-3" /> Dar baixa</button> : i > 0 ? <span className="text-[10px] text-slate-400">aguardando</span> : null}</div>
+                </div>)}
+                <p className="text-[10px] text-slate-400">A baixa quita sempre o vencimento mais antigo primeiro.</p>
+              </div>; })()}
+              {ci?.saldo <= 0.005 && <div className="mt-2 text-xs text-green-600">Em dia · próximo vencimento em {fmtDate(ci?.proximoVenc)}.</div>}
+              {ci?.jurosTotal > 0 && <div className="text-xs text-amber-600 mt-1">Inclui {brl(ci.jurosTotal)} de juros por atraso.</div>}
+              {payMoto !== m.id && <button onClick={() => setPayMoto(m.id)} className="mt-2 w-full border border-green-600 text-green-700 text-sm py-2 rounded-lg flex items-center justify-center gap-1">Registrar pagamento (valor parcial / multa / despesas)</button>}
+              {payMoto === m.id && <PagamentoForm moto={m} saldo={ci?.saldo || 0} parcelas={ci?.parcelas} onSave={(v, mt, des, dt) => registrarPagamento(m, v, mt, des, dt)} onCancel={() => setPayMoto(null)} />}
+            </div>
+          ))}
+        </div>}
+
+        {tab === "cobrancas" && <div className="space-y-3">
+          <div className="bg-red-600 text-white rounded-xl p-4"><div className="text-sm opacity-90">Cobranças vencidas</div><div className="text-2xl font-bold">{cobrList.length}</div><div className="text-sm mt-1">Total a receber: {brl(cobrList.reduce((s, a) => s + a.ci.saldo, 0))}</div></div>
+          {cobrList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma cobrança vencida. 🎉</p>}
+          {cobrList.map(({ m, ci }) => (
+            <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-red-500">
+              <div className="flex justify-between items-start"><div><div className="font-semibold">{m.modelo} · {m.placa}</div><div className="text-sm text-slate-500">{locName(m.vinculo.locatarioId)}</div></div><span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium">{ci.atraso} dia(s)</span></div>
+              <div className="mt-2 text-sm bg-slate-50 rounded-lg p-2 space-y-0.5">
+                <div className="flex justify-between"><span className="text-slate-500">Saldo devedor</span><b className="text-red-600">{brl(ci.saldo)}</b></div>
+                {ci.jurosTotal > 0 && <div className="flex justify-between text-amber-600"><span>Juros incluídos</span><b>{brl(ci.jurosTotal)}</b></div>}
+              </div>
+              {payMoto !== m.id && <button onClick={() => setPayMoto(m.id)} className="mt-2 w-full bg-green-600 text-white text-sm py-2 rounded-lg font-medium flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Dar baixa no pagamento</button>}
+              {payMoto === m.id && <PagamentoForm moto={m} saldo={ci.saldo} parcelas={ci.parcelas} onSave={(v, mt, des, dt) => registrarPagamento(m, v, mt, des, dt)} onCancel={() => setPayMoto(null)} />}
+            </div>
+          ))}
+        </div>}
+
+        {tab === "relatorios" && <RelatoriosView motos={data.motos} locatarios={data.locatarios} caixa={data.caixa} historico={data.historico} periodo={periodo} setPeriodo={setPeriodo} onPagarComissao={pagarComissao} />}
+
+        {tab === "config" && <Investidores data={data} upd={upd} />}
+        {tab === "backup" && <Backup data={data} setData={setData} />}
+      </div>
+    </div>
+  );
+}
+
+function Investidores({ data, upd }) {
+  const [f, setF] = useState({ nome: "", user: "", senha: "" });
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const add = () => { if (!f.nome.trim() || !f.user.trim() || !f.senha) return; if (data.investidores.some((i) => i.user === f.user.trim())) { alert("Já existe esse usuário."); return; } upd("investidores", (l) => [...l, { id: uid(), nome: f.nome.trim(), user: f.user.trim(), senha: f.senha }]); setF({ nome: "", user: "", senha: "" }); };
+  const del = (id) => { upd("investidores", (l) => l.filter((x) => x.id !== id)); upd("motos", (m) => m.map((x) => x.proprietarioId === id ? { ...x, proprietarioId: "" } : x)); };
+  const countMotos = (id) => data.motos.filter((m) => m.proprietarioId === id).length;
+  return (
+    <div className="space-y-3">
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+        <div className="flex items-center gap-2 font-medium text-slate-700"><UserPlus className="w-4 h-4" /> Novo acesso de investidor</div>
+        <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nome" value={f.nome} onChange={(e) => set("nome", e.target.value)} />
+        <div className="grid grid-cols-2 gap-2"><input className="border rounded-lg px-3 py-2" placeholder="Usuário" value={f.user} onChange={(e) => set("user", e.target.value)} /><input className="border rounded-lg px-3 py-2" placeholder="Senha" value={f.senha} onChange={(e) => set("senha", e.target.value)} /></div>
+        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Criar acesso</button>
+      </div>
+      {data.investidores.map((i) => <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">login: {i.user} · {countMotos(i.id)} moto(s)</div></div><button onClick={() => del(i.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button></div>)}
+      {data.investidores.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum investidor cadastrado.</p>}
+    </div>
+  );
+}
+
+function Caixa({ data, upd }) {
+  const [f, setF] = useState({ tipo: "entrada", valor: "", descricao: "", motoId: "", data: today() });
+  const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const add = () => { if (!f.valor) return; const mo = data.motos.find((m) => m.id === f.motoId); const isSaldo = f.tipo === "saldo"; upd("caixa", (c) => [{ ...f, id: uid(), valor: Number(f.valor), motoId: f.motoId || null, cicloId: mo?.cicloAtual || null, tipo: isSaldo ? "entrada" : f.tipo, saldoInicial: isSaldo || undefined, descricao: f.descricao || (isSaldo ? "Saldo inicial" : "") }, ...c]); setF({ tipo: "entrada", valor: "", descricao: "", motoId: "", data: today() }); };
+  const entradas = data.caixa.filter((c) => c.tipo === "entrada").reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const saidas = data.caixa.filter((c) => c.tipo === "saida").reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const motoLabel = (id) => { const m = data.motos.find((x) => x.id === id); return m ? `${m.modelo} ${m.placa}` : null; };
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-green-50 rounded-xl p-3 text-center"><div className="text-xs text-slate-500">Entradas</div><div className="font-bold text-green-600">{brl(entradas)}</div></div>
+        <div className="bg-red-50 rounded-xl p-3 text-center"><div className="text-xs text-slate-500">Saídas</div><div className="font-bold text-red-500">{brl(saidas)}</div></div>
+        <div className="bg-slate-800 rounded-xl p-3 text-center text-white"><div className="text-xs text-slate-300">Saldo</div><div className="font-bold">{brl(entradas - saidas)}</div></div>
+      </div>
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
+        <div className="grid grid-cols-3 gap-2"><button onClick={() => set("tipo", "entrada")} className={`py-2 rounded-lg text-sm font-medium ${f.tipo === "entrada" ? "bg-green-600 text-white" : "bg-slate-100"}`}>Entrada</button><button onClick={() => set("tipo", "saida")} className={`py-2 rounded-lg text-sm font-medium ${f.tipo === "saida" ? "bg-red-500 text-white" : "bg-slate-100"}`}>Saída</button><button onClick={() => set("tipo", "saldo")} className={`py-2 rounded-lg text-sm font-medium ${f.tipo === "saldo" ? "bg-slate-800 text-white" : "bg-slate-100"}`}>Saldo inicial</button></div>
+        <input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="Valor (R$)" value={f.valor} onChange={(e) => set("valor", e.target.value)} />
+        <input className="border rounded-lg px-3 py-2 w-full" placeholder="Descrição" value={f.descricao} onChange={(e) => set("descricao", e.target.value)} />
+        <div className="grid grid-cols-2 gap-2"><select className="border rounded-lg px-3 py-2 text-sm" value={f.motoId} onChange={(e) => set("motoId", e.target.value)}><option value="">Sem moto vinculada</option>{data.motos.map((m) => <option key={m.id} value={m.id}>{m.modelo} {m.placa}</option>)}</select><input type="date" className="border rounded-lg px-3 py-2 text-sm" value={f.data} onChange={(e) => set("data", e.target.value)} /></div>
+        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Lançar</button>
+        <p className="text-[11px] text-slate-400">Os pagamentos dos contratos devem ser feitos na aba Vencimentos/Cobranças para abater o saldo. Lançamentos aqui são avulsos.</p>
+      </div>
+      <div className="space-y-2">
+        {data.caixa.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum lançamento.</p>}
+        {data.caixa.map((c) => (
+          <div key={c.id} className="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center">
+            <div><div className="font-medium text-sm">{c.descricao || (c.tipo === "entrada" ? "Entrada" : "Saída")}
+              {c.pagamentoContrato && <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded ml-1">pagamento</span>}
+              {c.multa && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded ml-1">multa trânsito</span>}
+              {c.entradaContrato && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded ml-1">entrada</span>}
+              {c.saldoInicial && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded ml-1">saldo inicial</span>}
+              {c.comissaoPaga && <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-1">comissão</span>}
+            </div><div className="text-xs text-slate-400">{fmtDate(c.data)} {motoLabel(c.motoId) && `· ${motoLabel(c.motoId)}`}</div></div>
+            <div className="flex items-center gap-2"><span className={`font-semibold text-sm ${c.tipo === "entrada" ? "text-green-600" : "text-red-500"}`}>{c.tipo === "entrada" ? "+" : "−"} {brl(c.valor)}</span><button onClick={() => upd("caixa", (cx) => cx.filter((x) => x.id !== c.id))} className="text-slate-300 hover:text-red-500"><X className="w-4 h-4" /></button></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+/* ====================== INICIALIZACAO ====================== */
+const _notCfg = SUPABASE_URL.indexOf("COLE_") !== -1 || SUPABASE_KEY.indexOf("COLE_") !== -1;
+const _root = ReactDOM.createRoot(document.getElementById("root"));
+if (_notCfg) {
+  _root.render(
+    <div className="max-w-md mx-auto mt-16 bg-white rounded-2xl p-6 shadow">
+      <h1 className="font-bold text-lg mb-2 text-slate-800">Falta um passo 🙂</h1>
+      <p className="text-sm text-slate-600">Abra este arquivo <b>index.html</b> num editor de texto (Bloco de Notas) e cole, lá no topo, a sua <b>Project URL</b> e a sua <b>chave</b> do Supabase nas linhas <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code>. Depois salve e atualize a página.</p>
+    </div>
+  );
+} else {
+  _root.render(<App />);
+}
+</script>
+</body>
+</html>
