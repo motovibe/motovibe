@@ -389,13 +389,19 @@ function PeriodoSelect({ caixa, periodo, setPeriodo }) {
   return <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={periodo} onChange={(e) => setPeriodo(e.target.value)}><option value="tudo">Todo o período</option>{meses.map((ym) => <option key={ym} value={ym}>{mesLabel(ym)}</option>)}</select>;
 }
 
-function RelatoriosView({ motos, locatarios, caixa, historico, periodo, setPeriodo, onPagarComissao, hideTotal }) {
+function RelatoriosView({ motos, locatarios, caixa, historico, periodo, setPeriodo, onPagarComissao, hideTotal, investidores }) {
   const [relModo, setRelModo] = useState("placa");
   const [filtroRel, setFiltroRel] = useState("");
   const [filtroLoc, setFiltroLoc] = useState("");
+  const [filtroInv, setFiltroInv] = useState("");
   const caixaFiltrado = periodo === "tudo" ? caixa : caixa.filter((c) => (c.data || "").startsWith(periodo));
   const motoIds = new Set(motos.map((m) => m.id));
-  const relMotos = filtroRel ? motos.filter((m) => m.id === filtroRel) : motos;
+  const invNome = (id) => (investidores || []).find((i) => i.id === id)?.nome || "";
+  const qRel = filtroRel.trim().toLowerCase();
+  const qInvRel = filtroInv.trim().toLowerCase();
+  const relMotos = relModo === "investidor"
+    ? (!qInvRel ? motos.filter((m) => m.proprietarioId) : motos.filter((m) => invNome(m.proprietarioId).toLowerCase().includes(qInvRel)))
+    : (!qRel ? motos : motos.filter((m) => (m.placa || "").toLowerCase().includes(qRel) || (m.modelo || "").toLowerCase().includes(qRel)));
   const dRec = motos.reduce((s, m) => { const r = relatorioMoto(m, caixaFiltrado, m.cicloAtual); return s + r.recebido + r.entradaContrato + r.multaTransito + r.outras; }, 0);
   const saldoTotal = motos.filter((m) => m.vinculo).reduce((s, m) => s + (contratoInfo(m, caixa)?.saldo || 0), 0);
   let cDev = 0, cPag = 0, dDesp = 0, dRes = 0; motos.forEach((m) => { const r = relatorioMoto(m, caixaFiltrado, m.cicloAtual); cDev += r.comissaoDevida; cPag += r.comissaoPaga; dDesp += r.despesas; dRes += r.resultado; });
@@ -403,19 +409,21 @@ function RelatoriosView({ motos, locatarios, caixa, historico, periodo, setPerio
     <div className="space-y-3">
       <PeriodoSelect caixa={caixa} periodo={periodo} setPeriodo={setPeriodo} />
       <div className="grid grid-cols-2 gap-2">
-        <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={relModo} onChange={(e) => { setRelModo(e.target.value); setFiltroRel(""); setFiltroLoc(""); }}>
+        <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={relModo} onChange={(e) => { setRelModo(e.target.value); setFiltroRel(""); setFiltroLoc(""); setFiltroInv(""); }}>
           <option value="placa">Filtrar por placa</option>
           <option value="locatario">Filtrar por locatário</option>
+          {investidores && investidores.length > 0 && <option value="investidor">Filtrar por investidor</option>}
         </select>
-        {relModo === "placa"
-          ? <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroRel} onChange={(e) => setFiltroRel(e.target.value)}><option value="">Todas as motos</option>{motos.map((m) => <option key={m.id} value={m.id}>{m.placa || m.modelo}</option>)}</select>
-          : <select className="border rounded-lg px-3 py-2 text-sm w-full bg-white" value={filtroLoc} onChange={(e) => setFiltroLoc(e.target.value)}><option value="">Todos os locatários</option>{locatarios.map((l) => <option key={l.id} value={l.id}>{l.nome}</option>)}</select>}
+        {relModo === "placa" && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar placa ou modelo" value={filtroRel} onChange={(e) => setFiltroRel(e.target.value)} /></div>}
+        {relModo === "locatario" && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar locatário" value={filtroLoc} onChange={(e) => setFiltroLoc(e.target.value)} /></div>}
+        {relModo === "investidor" && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar investidor" value={filtroInv} onChange={(e) => setFiltroInv(e.target.value)} /></div>}
       </div>
 
-      {relModo === "placa" && <>
+      {(relModo === "placa" || relModo === "investidor") && <>
         {motos.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto para exibir.</p>}
+        {relModo === "investidor" && motos.length > 0 && relMotos.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhum resultado.</p>}
         {relMotos.map((m) => <RelatorioCard key={m.id} m={m} caixa={caixaFiltrado} historico={histMoto(m, caixa)} saldo={m.vinculo ? contratoInfo(m, caixa)?.saldo : null} onPagarComissao={onPagarComissao} />)}
-        {!hideTotal && !filtroRel && motos.length > 0 && <div className="bg-slate-800 text-white rounded-xl p-4 space-y-1 text-sm">
+        {!hideTotal && relModo === "placa" && !filtroRel && motos.length > 0 && <div className="bg-slate-800 text-white rounded-xl p-4 space-y-1 text-sm">
           <div className="font-semibold mb-1">Total geral {periodo !== "tudo" && `· ${mesLabel(periodo)}`}</div>
           <div className="flex justify-between"><span>Recebido (contrato + entrada + outras)</span><b>{brl(dRec)}</b></div>
           <div className="flex justify-between"><span>Saldo a receber (em aberto)</span><b>{brl(saldoTotal)}</b></div>
@@ -427,7 +435,8 @@ function RelatoriosView({ motos, locatarios, caixa, historico, periodo, setPerio
 
       {relModo === "locatario" && (() => {
         if (locatarios.length === 0) return <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário para exibir.</p>;
-        const locs = filtroLoc ? locatarios.filter((l) => l.id === filtroLoc) : locatarios;
+        const qLocRel = filtroLoc.trim().toLowerCase();
+        const locs = !qLocRel ? locatarios : locatarios.filter((l) => (l.nome || "").toLowerCase().includes(qLocRel));
         return locs.map((l) => {
           const ativos = motos.filter((m) => m.vinculo?.locatarioId === l.id).map((m) => ({ moto: m, motoNome: `${m.modelo} ${m.placa}`, dataInicio: m.vinculo.dataInicio, dataSaida: null, cicloId: m.vinculo.cicloId, ativo: true }));
           const hist = (historico || []).filter((h) => h.locatarioId === l.id && motoIds.has(h.motoId)).map((h) => { const mo = motos.find((x) => x.id === h.motoId); return { moto: mo, motoNome: mo ? `${mo.modelo} ${mo.placa}` : (h.motoNome || "Moto removida"), dataInicio: h.dataInicio, dataSaida: h.dataSaida, cicloId: h.cicloId, ativo: false }; });
@@ -812,7 +821,7 @@ function App() {
           ))}
         </div>}
 
-        {tab === "relatorios" && <RelatoriosView motos={data.motos} locatarios={data.locatarios} caixa={data.caixa} historico={data.historico} periodo={periodo} setPeriodo={setPeriodo} onPagarComissao={pagarComissao} />}
+        {tab === "relatorios" && <RelatoriosView motos={data.motos} locatarios={data.locatarios} caixa={data.caixa} historico={data.historico} periodo={periodo} setPeriodo={setPeriodo} onPagarComissao={pagarComissao} investidores={data.investidores} />}
 
         {tab === "config" && <Investidores data={data} upd={upd} busca={buscaInv} setBusca={setBuscaInv} list={investidoresList} />}
         {tab === "backup" && <Backup data={data} setData={setData} />}
