@@ -792,12 +792,17 @@ function App() {
           {vencidosN > 0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex gap-2"><span className="w-4 h-4 mt-0.5 shrink-0" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> {vencidosN} contrato(s) com saldo vencido. Veja em Cobranças.</div>}
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="font-semibold text-sm mb-3">Recebido — últimos 6 meses</div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 11 }} width={44} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} /><Tooltip formatter={(v) => brl(v)} />
-                <Bar dataKey="recebido" radius={[6, 6, 0, 0]}>{chartData.map((_, i) => <Cell key={i} fill="#16a34a" />)}</Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="flex items-end gap-1 h-32">
+              {chartData.map((d, i) => {
+                const max = Math.max(...chartData.map(x => x.recebido), 1);
+                const h = Math.round((d.recebido / max) * 100);
+                return <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs text-slate-400">{d.recebido > 0 ? (d.recebido >= 1000 ? `${(d.recebido/1000).toFixed(0)}k` : d.recebido) : ""}</span>
+                  <div style={{height: `${h}%`, minHeight: d.recebido > 0 ? "4px" : "0"}} className="w-full bg-green-500 rounded-t-sm" />
+                  <span className="text-xs text-slate-400">{d.label}</span>
+                </div>;
+              })}
+            </div>
           </div>
         </div>}
 
