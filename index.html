@@ -16,81 +16,30 @@
 /* @jsxRuntime classic */
 const { useState, useEffect, useRef } = React;
 
-/* ============================================================
-   >>>>>>>>>>  COLE AQUI AS SUAS 2 CHAVES DO SUPABASE  <<<<<<<<<<
-   (no painel do Supabase: Settings -> API Keys / botao Connect)
-   Troque o texto entre aspas, mantendo as aspas.
-   ============================================================ */
-const SUPABASE_URL = "https://vtqgfpkmprulzomkghxq.supabase.co";
-const SUPABASE_KEY = "sb_publishable_RCuLfwkZqCFE4RiKlQg4RA_4UyLT8bh";
-/* ============================================================ */
-
-/* ---- icones (substituem o lucide-react) ---- */
-const Svg = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props} />;
-const Bike = (p) => <Svg {...p}><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 18 11 8h4M9 8h6l2 10M14 6h3"/></Svg>;
-const Users = (p) => <Svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Svg>;
-const Wallet = (p) => <Svg {...p}><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 9h18"/><path d="M16 13h.01"/></Svg>;
-const Bell = (p) => <Svg {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Svg>;
-const BarChart3 = (p) => <Svg {...p}><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-8"/></Svg>;
-const LogOut = (p) => <Svg {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></Svg>;
-const Exit = LogOut;
-const Plus = (p) => <Svg {...p}><path d="M12 5v14M5 12h14"/></Svg>;
-const Trash2 = (p) => <Svg {...p}><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></Svg>;
-const Pencil = (p) => <Svg {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></Svg>;
-const Link2 = (p) => <Svg {...p}><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><path d="M8 12h8"/></Svg>;
-const Unlink = (p) => <Svg {...p}><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 4 8"/><path d="M3 3l18 18"/></Svg>;
-const Check = (p) => <Svg {...p}><path d="M20 6 9 17l-5-5"/></Svg>;
-const X = (p) => <Svg {...p}><path d="M18 6 6 18M6 6l12 12"/></Svg>;
-const AlertTriangle = (p) => <Svg {...p}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Svg>;
-const Lock = (p) => <Svg {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Svg>;
-const Settings = (p) => <Svg {...p}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></Svg>;
-const UserPlus = (p) => <Svg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></Svg>;
-const Eye = (p) => <Svg {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></Svg>;
-const LayoutDashboard = (p) => <Svg {...p}><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></Svg>;
-const Search = (p) => <Svg {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Svg>;
-const Download = (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></Svg>;
-
-/* ---- grafico simples (substitui o recharts) ---- */
-const MiniBarChart = ({ data, max }) => {
-  const m = max || Math.max.apply(null, data.map((d) => d.recebido).concat(1));
-  return (
-    <div className="flex items-end gap-2" style={{ height: 200 }}>
-      {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-          <div className="text-[10px] text-slate-500 mb-1">{d.recebido > 0 ? brl(d.recebido) : ""}</div>
-          <div className="w-full bg-green-600 rounded-t-md" style={{ height: Math.max(2, (d.recebido / m) * 150) }} />
-          <div className="text-[11px] text-slate-500 mt-1">{d.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-/* ---- conexao com o Supabase (substitui o window.storage) ---- */
-let _supabase = null;
-try { const { createClient } = supabase; _supabase = createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Erro ao iniciar Supabase:", e); }
+const SUPA_URL = "https://vtqgfpkmprulzomkghxq.supabase.co";
+const SUPA_KEY = "sb_publishable_RCuLfwkZqCFE4RiKlQg4RA_4UyLT8bh";
+const _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 window.storage = {
-  async get(key) {
-    const { data, error } = await _supabase.from("app_state").select("data").eq("id", key).maybeSingle();
-    if (error) throw error;
-    return data ? { value: JSON.stringify(data.data) } : null;
+  get: async (key) => {
+    const { data, error } = await _sb.from("storage").select("value").eq("key", key).maybeSingle();
+    if (error || !data) return null;
+    return { key, value: data.value };
   },
-  async set(key, value) {
-    const { error } = await _supabase.from("app_state").upsert({ id: key, data: JSON.parse(value) });
-    if (error) throw error;
+  set: async (key, value) => {
+    const { error } = await _sb.from("storage").upsert({ key, value }, { onConflict: "key" });
+    return error ? null : { key, value };
   },
-  async list(prefix) {
-    const { data, error } = await _supabase.from("app_state").select("id").like("id", (prefix || "") + "%");
-    if (error) throw error;
-    return { keys: (data || []).map((r) => r.id) };
+  delete: async (key) => {
+    await _sb.from("storage").delete().eq("key", key);
+    return { key, deleted: true };
   },
-  async delete(key) {
-    const { error } = await _supabase.from("app_state").delete().eq("id", key);
-    if (error) throw error;
+  list: async (prefix) => {
+    let q = _sb.from("storage").select("key");
+    if (prefix) q = q.like("key", prefix + "%");
+    const { data } = await q;
+    return { keys: (data || []).map(r => r.key) };
   },
 };
-
-/* ====================== APLICATIVO ====================== */
 
 const STATUS = {
   disponivel: { label: "Disponível", cls: "bg-green-100 text-green-700" },
@@ -210,7 +159,7 @@ function Login({ adminAuth, investidores, onCreateAdmin, onLogin }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
       <div className="bg-neutral-900 border border-green-500/30 rounded-2xl shadow-2xl w-full max-w-sm p-7">
-        <div className="flex items-center justify-center gap-2 mb-1"><Bike className="w-8 h-8 text-green-500" /><h1 className="text-2xl font-extrabold text-white">Moto<span className="text-green-500">Vibe</span></h1></div>
+        <div className="flex items-center justify-center gap-2 mb-1"><span className="w-8 h-8 text-green-500" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 0 0 0-2h-3l-3 9 2 2"/><path d="m5.5 14 3-7.5"/></svg></span><h1 className="text-2xl font-extrabold text-white">Moto<span className="text-green-500">Vibe</span></h1></div>
         <p className="text-center text-xs tracking-[0.3em] text-green-500/80 mb-4">S Y S T E M</p>
         <p className="text-sm text-neutral-400 mb-5 text-center">{creating ? "Crie o acesso de administrador." : "Acesso de administrador ou investidor."}</p>
         <div className="space-y-3">
@@ -272,10 +221,10 @@ function LocForm({ initial, onSave, onCancel }) {
         {telefones.map((t, i) => (
           <div key={i} className="flex gap-2 mt-1">
             <input className="border rounded-lg px-3 py-2 flex-1" placeholder={`Telefone ${i + 1}`} value={t} onChange={(e) => setTel(i, e.target.value)} />
-            {telefones.length > 1 && <button onClick={() => delTel(i)} className="px-2 text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>}
+            {telefones.length > 1 && <button onClick={() => delTel(i)} className="px-2 text-red-400 hover:text-red-600"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></button>}
           </div>
         ))}
-        <button onClick={addTel} className="mt-1 w-full text-sm text-slate-600 border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Adicionar telefone</button>
+        <button onClick={addTel} className="mt-1 w-full text-sm text-slate-600 border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span> Adicionar telefone</button>
       </div>
       <input className="border rounded-lg px-3 py-2 w-full" placeholder="CPF / Documento" value={f.documento} onChange={(e) => set("documento", e.target.value)} />
       <input className="border rounded-lg px-3 py-2 w-full" placeholder="Endereço" value={f.endereco || ""} onChange={(e) => set("endereco", e.target.value)} />
@@ -333,9 +282,9 @@ function PagamentoForm({ moto, saldo, parcelas, onSave, onCancel }) {
       <div><label className="text-xs text-slate-600">Multa de trânsito (não entra na comissão)</label><input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="0,00" value={multaTransito} onChange={(e) => setMultaTransito(e.target.value)} /></div>
       <div className="border-t border-green-200 pt-2">
         <label className="text-xs text-slate-600">Despesas da moto (cada uma vira uma saída)</label>
-        {despesas.map((d, i) => <div key={i} className="flex items-center justify-between bg-white border rounded-lg px-3 py-1.5 mt-1 text-sm"><span className="truncate">{d.descricao || "Despesa"} · <b className="text-red-500">{brl(d.valor)}</b></span><button onClick={() => setDespesas((s) => s.filter((_, j) => j !== i))} className="text-slate-300 ml-2"><X className="w-4 h-4" /></button></div>)}
+        {despesas.map((d, i) => <div key={i} className="flex items-center justify-between bg-white border rounded-lg px-3 py-1.5 mt-1 text-sm"><span className="truncate">{d.descricao || "Despesa"} · <b className="text-red-500">{brl(d.valor)}</b></span><button onClick={() => setDespesas((s) => s.filter((_, j) => j !== i))} className="text-slate-300 ml-2"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></button></div>)}
         <div className="grid grid-cols-2 gap-2 mt-1"><input type="number" className="border rounded-lg px-3 py-2 text-sm" placeholder="Valor (R$)" value={dVal} onChange={(e) => setDVal(e.target.value)} /><input className="border rounded-lg px-3 py-2 text-sm" placeholder="Descrição" value={dDesc} onChange={(e) => setDDesc(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addDespesa()} /></div>
-        <button onClick={addDespesa} className="w-full mt-1 text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Adicionar despesa</button>
+        <button onClick={addDespesa} className="w-full mt-1 text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span> Adicionar despesa</button>
       </div>
       <div><label className="text-xs text-slate-600">Data</label><input type="date" className="border rounded-lg px-3 py-2 w-full" value={data} onChange={(e) => setData(e.target.value)} /></div>
       <div className="text-xs bg-white border rounded-lg p-2 text-slate-600 flex justify-between"><span>Comissão ({pct}%): <b>{brl(comissao)}</b></span><span>Novo saldo: <b>{brl(Math.max(0, saldo - (Number(valor) || 0)))}</b></span></div>
@@ -414,9 +363,9 @@ function RelatoriosView({ motos, locatarios, caixa, historico, periodo, setPerio
           <option value="locatario">Filtrar por locatário</option>
           {investidores && investidores.length > 0 && <option value="investidor">Filtrar por investidor</option>}
         </select>
-        {relModo === "placa" && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar placa ou modelo" value={filtroRel} onChange={(e) => setFiltroRel(e.target.value)} /></div>}
-        {relModo === "locatario" && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar locatário" value={filtroLoc} onChange={(e) => setFiltroLoc(e.target.value)} /></div>}
-        {relModo === "investidor" && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar investidor" value={filtroInv} onChange={(e) => setFiltroInv(e.target.value)} /></div>}
+        {relModo === "placa" && <div className="relative"><span className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar placa ou modelo" value={filtroRel} onChange={(e) => setFiltroRel(e.target.value)} /></div>}
+        {relModo === "locatario" && <div className="relative"><span className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar locatário" value={filtroLoc} onChange={(e) => setFiltroLoc(e.target.value)} /></div>}
+        {relModo === "investidor" && <div className="relative"><span className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 text-sm w-full bg-white" placeholder="Buscar investidor" value={filtroInv} onChange={(e) => setFiltroInv(e.target.value)} /></div>}
       </div>
 
       {(relModo === "placa" || relModo === "investidor") && <>
@@ -474,6 +423,124 @@ function RelatoriosView({ motos, locatarios, caixa, historico, periodo, setPerio
   );
 }
 
+function ImportarPlanilha({ data, upd }) {
+  const [preview, setPreview] = useState([]);
+  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+
+  const parseNum = (v) => { if (!v) return 0; const n = parseFloat(v.toString().replace(",",".").replace("%","")); return isNaN(n) ? 0 : n; };
+
+  const processarCSV = (text) => {
+    const lines = text.split(/\r?\n/);
+    const lancamentos = [];
+    let r = 1; // skip header
+    while (r < lines.length - 1) {
+      const dateRow = lines[r].split(";").map(s => s.replace(/^"|"$/g,"").trim());
+      const valRow = (lines[r+1] || "").split(";").map(s => s.replace(/^"|"$/g,"").trim());
+      if (!dateRow[0] && !dateRow[1]) { r += 2; continue; }
+      const placa = (dateRow[0] || "").trim();
+      if (!placa) { r += 2; continue; }
+      const moto = data.motos.find((m) => m.placa === placa);
+      if (!moto) { lancamentos.push({ erro: `Placa "${placa}" não encontrada no sistema`, placa }); r += 2; continue; }
+      const inicio = dateRow[1] ? dateRow[1].substring(0,10) : null;
+      const multa = parseNum(dateRow[12]);
+      const juros = parseNum(dateRow[13]);
+      const caucao = parseNum(dateRow[16]);
+      const despesa = parseNum(dateRow[17]);
+      const descDespesa = (dateRow[18] || "").trim();
+      const totalRecebido = [5,6,7,8,9,10,11].reduce((s,c) => s + parseNum(valRow[c]), 0);
+      const totalRecebidoR = Math.round(totalRecebido * 100) / 100;
+      const dataBase = inicio || today();
+      if (totalRecebidoR > 0) lancamentos.push({ tipo:"pagamento", placa, motoId:moto.id, cicloId:moto.cicloAtual, data:dataBase, valor:totalRecebidoR, descricao:`Pagamento semanal${inicio ? ` — semana de ${inicio.split("-").reverse().join("/")}` : ""}` });
+      if (multa > 0) lancamentos.push({ tipo:"multa", placa, motoId:moto.id, cicloId:moto.cicloAtual, data:dataBase, valor:multa, descricao:"Multa de trânsito (importado da planilha)" });
+      if (juros > 0) lancamentos.push({ tipo:"juros", placa, motoId:moto.id, cicloId:moto.cicloAtual, data:dataBase, valor:juros, descricao:"Juros por atraso (importado da planilha)" });
+      if (caucao > 0) lancamentos.push({ tipo:"caucao", placa, motoId:moto.id, cicloId:moto.cicloAtual, data:dataBase, valor:caucao, descricao:"Caução/entrada (importado da planilha)" });
+      if (despesa > 0) lancamentos.push({ tipo:"despesa", placa, motoId:moto.id, cicloId:moto.cicloAtual, data:dataBase, valor:despesa, descricao:descDespesa || "Despesa (importado da planilha)" });
+      r += 2;
+    }
+    return lancamentos;
+  };
+
+  const processarArquivo = (file) => {
+    setMsg(""); setPreview([]); setConfirmando(false);
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv")) { setMsg("Por favor, exporte a planilha como CSV (separado por ponto e vírgula) antes de importar."); return; }
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const lancamentos = processarCSV(e.target.result);
+        if (lancamentos.length === 0) setMsg("Nenhum lançamento encontrado. Verifique se o arquivo está no formato correto (CSV separado por ;).");
+        else { setPreview(lancamentos); setConfirmando(true); }
+      } catch (err) { setMsg("Erro ao ler o arquivo: " + err.message); }
+      setLoading(false);
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  const confirmar = () => {
+    const novos = preview.filter(l => !l.erro).map(l => ({
+      id: uid(), tipo: l.tipo === "despesa" ? "saida" : "entrada",
+      valor: l.valor, descricao: l.descricao, motoId: l.motoId,
+      data: l.data, cicloId: l.cicloId,
+      pagamentoContrato: l.tipo === "pagamento" || undefined,
+      entradaContrato: l.tipo === "caucao" || undefined,
+      multa: l.tipo === "multa" || undefined,
+    }));
+    upd("caixa", (c) => [...c, ...novos].sort((a,b) => a.data > b.data ? -1 : 1));
+    setMsg(`✅ ${novos.length} lançamento(s) importado(s) com sucesso!`);
+    setPreview([]); setConfirmando(false);
+  };
+
+  const tipoLabel = { pagamento: "💰 Pagamento", multa: "⚠️ Multa", juros: "📈 Juros", caucao: "🔐 Caução", despesa: "🔧 Despesa" };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+        <div className="font-semibold text-slate-700 flex items-center gap-2"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span> Importar planilha de lançamentos</div>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 space-y-1">
+          <div className="font-medium">Como exportar a planilha:</div>
+          <div>1. Abra a planilha <b>MotoVibe_Planilha_Lancamentos.xlsx</b> no Excel ou Numbers</div>
+          <div>2. Vá em <b>Arquivo → Exportar → CSV</b> (separado por ponto e vírgula)</div>
+          <div>3. Salve e selecione o arquivo CSV aqui abaixo</div>
+        </div>
+        <input type="file" accept=".csv" onChange={(e) => processarArquivo(e.target.files[0])} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-800 file:text-white file:font-medium cursor-pointer" />
+        {loading && <p className="text-sm text-slate-500 animate-pulse">Lendo arquivo...</p>}
+        {msg && <p className={`text-sm font-medium ${msg.startsWith("✅") ? "text-green-600" : "text-red-500"}`}>{msg}</p>}
+      </div>
+      {confirmando && preview.length > 0 && (
+        <div className="space-y-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="font-semibold text-amber-800 mb-1">Preview — {preview.filter(l=>!l.erro).length} lançamento(s) prontos para importar</div>
+            <p className="text-sm text-amber-700">Confira abaixo e clique em "Confirmar importação" para lançar no Caixa.</p>
+          </div>
+          <div className="space-y-2">
+            {preview.map((l, i) => l.erro
+              ? <div key={i} className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">❌ {l.erro}</div>
+              : <div key={i} className="bg-white rounded-lg p-3 shadow-sm flex justify-between items-center text-sm">
+                  <div>
+                    <span className="font-medium">{tipoLabel[l.tipo] || l.tipo}</span>
+                    <span className="text-slate-400 mx-2">·</span>
+                    <span className="font-mono text-slate-600">{l.placa}</span>
+                    <span className="text-slate-400 mx-2">·</span>
+                    <span className="text-slate-500">{l.data?.split("-").reverse().join("/")}</span>
+                    {l.descricao && <div className="text-slate-400 text-xs mt-0.5">{l.descricao}</div>}
+                  </div>
+                  <span className={`font-semibold ${l.tipo==="despesa" ? "text-red-500" : "text-green-600"}`}>{l.tipo==="despesa" ? "−" : "+"} R$ {l.valor.toFixed(2).replace(".",",")}</span>
+                </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={confirmar} className="flex-1 bg-green-600 text-white rounded-xl py-3 font-semibold">✅ Confirmar importação</button>
+            <button onClick={() => { setPreview([]); setConfirmando(false); }} className="flex-1 bg-slate-200 text-slate-700 rounded-xl py-3 font-semibold">Cancelar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Backup({ data, setData }) {
   const [snaps, setSnaps] = useState([]);
   const [msg, setMsg] = useState("");
@@ -500,7 +567,7 @@ function Backup({ data, setData }) {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
-        <div className="font-semibold flex items-center gap-2"><Download className="w-5 h-5 text-slate-700" /> Cópia de segurança</div>
+        <div className="font-semibold flex items-center gap-2"><span className="w-5 h-5 text-slate-700" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span> Cópia de segurança</div>
         <p className="text-sm text-slate-500">Baixe uma cópia de todos os dados (motos, locatários, lançamentos). Guarde o arquivo em local seguro — é sua proteção caso algo dê errado com a nuvem.</p>
         <button onClick={baixar} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium">Baixar cópia agora</button>
         <label className="w-full block text-center border border-slate-300 text-slate-700 rounded-lg py-2 text-sm cursor-pointer">Restaurar de um arquivo<input type="file" accept="application/json,.json" onChange={importar} className="hidden" /></label>
@@ -606,10 +673,10 @@ function App() {
     minhas.forEach((m) => { const r = relatorioMoto(m, caixaInv, m.cicloAtual); tRec += r.recebido; tMulta += r.multaTransito; tEnt += r.entradaContrato; tOut += r.outras; tDesp += r.despesas; tComDev += r.comissaoDevida; tComPag += r.comissaoPaga; tRes += r.resultado; });
     const saldoInv = minhas.filter((m) => m.vinculo).reduce((s, m) => s + (contratoInfo(m, data.caixa)?.saldo || 0), 0);
     const movInv = caixaInv.filter((c) => minhasIds.has(c.motoId)).slice().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
-    const invTabs = [{ k: "painel", label: "Painel", icon: LayoutDashboard }, { k: "relatorios", label: "Relatórios", icon: BarChart3 }];
+    const invTabs = [{ k: "painel", label: "Painel", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span> }, { k: "relatorios", label: "Relatórios", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span> }];
     return (
       <div className="min-h-screen bg-slate-100 text-slate-800">
-        <div className="bg-indigo-700 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><Eye className="w-5 h-5" /> Painel do Investidor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-indigo-600 px-3 py-1.5 rounded-lg"><LogOut className="w-4 h-4" /> Sair</button></div>
+        <div className="bg-indigo-700 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><span className="w-5 h-5" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span> Painel do Investidor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-indigo-600 px-3 py-1.5 rounded-lg"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> Sair</button></div>
         <div className="flex bg-white border-b sticky top-[52px] z-10">
           {invTabs.map((t) => { const Icon = t.icon; return (
             <button key={t.k} onClick={() => setInvTab(t.k)} className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 text-xs ${invTab === t.k ? "text-indigo-700 border-b-2 border-indigo-700 font-medium" : "text-slate-400"}`}><Icon className="w-5 h-5" />{t.label}</button>
@@ -660,10 +727,11 @@ function App() {
   }
 
   const tabs = [
-    { k: "dash", label: "Painel", icon: LayoutDashboard }, { k: "motos", label: "Motos", icon: Bike }, { k: "locatarios", label: "Locatários", icon: Users },
-    { k: "caixa", label: "Caixa", icon: Wallet }, { k: "vencimentos", label: "Vencimentos", icon: Bell }, { k: "cobrancas", label: "Cobranças", icon: AlertTriangle },
-    { k: "relatorios", label: "Relatórios", icon: BarChart3 }, { k: "config", label: "Investidores", icon: Settings },
-    { k: "backup", label: "Backup", icon: Download },
+    { k: "dash", label: "Painel", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span> }, { k: "motos", label: "Motos", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 0 0 0-2h-3l-3 9 2 2"/><path d="m5.5 14 3-7.5"/></svg></span> }, { k: "locatarios", label: "Locatários", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> },
+    { k: "caixa", label: "Caixa", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h2v-4z"/></svg></span> }, { k: "vencimentos", label: "Vencimentos", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span> }, { k: "cobrancas", label: "Cobranças", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> },
+    { k: "relatorios", label: "Relatórios", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span> }, { k: "config", label: "Investidores", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> },
+    { k: "backup", label: "Backup", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span> },
+    { k: "importar", label: "Importar", icon: () => <span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span> },
   ];
   const ativos = data.motos.filter((m) => m.vinculo).map((m) => ({ m, ci: contratoInfo(m, data.caixa) }));
   const vencidosN = ativos.filter((a) => a.ci && a.ci.vencido).length;
@@ -699,7 +767,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800">
-      <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><Bike className="w-5 h-5" /> MotoGestor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-slate-700 px-3 py-1.5 rounded-lg"><LogOut className="w-4 h-4" /> Sair</button></div>
+      <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"><div className="flex items-center gap-2 font-bold"><span className="w-5 h-5" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 0 0 0-2h-3l-3 9 2 2"/><path d="m5.5 14 3-7.5"/></svg></span> MotoGestor</div><button onClick={() => setSession(null)} className="flex items-center gap-1 text-sm bg-slate-700 px-3 py-1.5 rounded-lg"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> Sair</button></div>
       <div className="flex overflow-x-auto bg-white border-b sticky top-[52px] z-10">
         {tabs.map((t) => { const Icon = t.icon; return (
           <button key={t.k} onClick={() => setTab(t.k)} className={`flex-1 min-w-[80px] py-2.5 flex flex-col items-center gap-0.5 text-xs relative ${tab === t.k ? "text-slate-900 border-b-2 border-slate-800 font-medium" : "text-slate-400"}`}>
@@ -721,17 +789,22 @@ function App() {
           <div className="grid grid-cols-4 gap-2">
             <KPI label="Motos" val={data.motos.length} /><KPI label="Alugadas" val={cont.alugada} cls="text-blue-600" /><KPI label="Disponív." val={cont.disponivel} cls="text-green-600" /><KPI label="Manut." val={cont.manutencao} cls="text-amber-600" />
           </div>
-          {vencidosN > 0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {vencidosN} contrato(s) com saldo vencido. Veja em Cobranças.</div>}
+          {vencidosN > 0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 flex gap-2"><span className="w-4 h-4 mt-0.5 shrink-0" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> {vencidosN} contrato(s) com saldo vencido. Veja em Cobranças.</div>}
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="font-semibold text-sm mb-3">Recebido — últimos 6 meses</div>
-            <MiniBarChart data={chartData} max={maxCh} />
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 11 }} width={44} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} /><Tooltip formatter={(v) => brl(v)} />
+                <Bar dataKey="recebido" radius={[6, 6, 0, 0]}>{chartData.map((_, i) => <Cell key={i} fill="#16a34a" />)}</Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>}
 
         {tab === "motos" && <div className="space-y-3">
-          {!addMoto && !editMoto && <button onClick={() => setAddMoto(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar moto</button>}
+          {!addMoto && !editMoto && <button onClick={() => setAddMoto(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span> Cadastrar moto</button>}
           {addMoto && <MotoForm investidores={data.investidores} onSave={saveMoto} onCancel={() => setAddMoto(false)} />}
-          {!addMoto && !editMoto && data.motos.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por placa, modelo, locatário ou investidor" value={buscaMoto} onChange={(e) => setBuscaMoto(e.target.value)} /></div>}
+          {!addMoto && !editMoto && data.motos.length > 0 && <div className="relative"><span className="w-4 h-4 absolute left-3 top-3 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por placa, modelo, locatário ou investidor" value={buscaMoto} onChange={(e) => setBuscaMoto(e.target.value)} /></div>}
           {motosList.map((m) => editMoto === m.id ? <MotoForm key={m.id} initial={m} investidores={data.investidores} onSave={saveMoto} onCancel={() => setEditMoto(null)} /> : (
             <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex justify-between items-start">
@@ -744,10 +817,10 @@ function App() {
               {m.vinculo ? <>
                 <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2"><div>👤 {locName(m.vinculo.locatarioId)} · saldo {brl(contratoInfo(m, data.caixa)?.saldo || 0)}</div><div className="text-xs text-slate-500">Alugada em {fmtDate(m.vinculo.dataInicio)} · {daysBetween(m.vinculo.dataInicio, today())} dia(s) de contrato</div></div>
                 {saindo === m.id ? <div className="mt-2 bg-slate-50 border rounded-lg p-2 space-y-2"><label className="text-xs text-slate-500">Data de saída da moto</label><input type="date" className="border rounded-lg px-3 py-2 w-full text-sm" value={dataSaida} onChange={(e) => setDataSaida(e.target.value)} /><div className="flex gap-2"><button onClick={() => encerrarContrato(m.id, dataSaida)} className="flex-1 bg-slate-800 text-white rounded-lg py-2 text-sm">Encerrar contrato</button><button onClick={() => setSaindo(null)} className="px-4 bg-slate-200 rounded-lg py-2 text-sm">Cancelar</button></div></div>
-                  : <button onClick={() => { setSaindo(m.id); setDataSaida(today()); }} className="mt-2 w-full text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><Exit className="w-4 h-4" /> Encerrar contrato (registrar saída)</button>}
-              </> : <button onClick={() => setVincMoto(m.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><Link2 className="w-4 h-4" /> Vincular locatário</button>}
+                  : <button onClick={() => { setSaindo(m.id); setDataSaida(today()); }} className="mt-2 w-full text-sm border border-dashed border-red-300 text-red-600 rounded-lg py-1.5 flex items-center justify-center gap-1"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> Encerrar contrato (registrar saída)</button>}
+              </> : <button onClick={() => setVincMoto(m.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span> Vincular locatário</button>}
               {vincMoto === m.id && <VincForm mode="fromMoto" valorSem={valSem(m)} list={data.locatarios.map((l) => ({ id: l.id, label: l.nome, entrada: motoEntrada(m), valorSem: valSem(m) }))} onSave={(lid, venc, ent) => { criarVinculo(m.id, lid, venc, ent); setVincMoto(null); }} onCancel={() => setVincMoto(null)} />}
-              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditMoto(m.id)} className="flex items-center gap-1 text-slate-600"><Pencil className="w-4 h-4" /> Editar</button><button onClick={() => delMoto(m.id)} className="flex items-center gap-1 text-red-500"><Trash2 className="w-4 h-4" /> Excluir</button></div>
+              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditMoto(m.id)} className="flex items-center gap-1 text-slate-600"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span> Editar</button><button onClick={() => delMoto(m.id)} className="flex items-center gap-1 text-red-500"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span> Excluir</button></div>
             </div>
           ))}
           {data.motos.length === 0 && !addMoto && <p className="text-center text-slate-400 text-sm py-8">Nenhuma moto cadastrada.</p>}
@@ -755,9 +828,9 @@ function App() {
         </div>}
 
         {tab === "locatarios" && <div className="space-y-3">
-          {!addLoc && !editLoc && <button onClick={() => setAddLoc(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><Plus className="w-4 h-4" /> Cadastrar locatário</button>}
+          {!addLoc && !editLoc && <button onClick={() => setAddLoc(true)} className="w-full bg-slate-800 text-white rounded-xl py-2.5 flex items-center justify-center gap-2 font-medium"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span> Cadastrar locatário</button>}
           {addLoc && <LocForm onSave={saveLoc} onCancel={() => setAddLoc(false)} />}
-          {!addLoc && !editLoc && data.locatarios.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por nome, telefone ou moto" value={buscaLoc} onChange={(e) => setBuscaLoc(e.target.value)} /></div>}
+          {!addLoc && !editLoc && data.locatarios.length > 0 && <div className="relative"><span className="w-4 h-4 absolute left-3 top-3 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por nome, telefone ou moto" value={buscaLoc} onChange={(e) => setBuscaLoc(e.target.value)} /></div>}
           {locatariosList.map((l) => { const moto = motoDoLoc(l.id); const saidas = (data.historico || []).filter((h) => h.locatarioId === l.id); return editLoc === l.id ? <LocForm key={l.id} initial={l} onSave={saveLoc} onCancel={() => setEditLoc(null)} /> : (
             <div key={l.id} className="bg-white rounded-xl p-4 shadow-sm">
               <div className="font-semibold">{l.nome}</div>
@@ -765,10 +838,10 @@ function App() {
               {l.endereco && <div className="text-sm text-slate-500">📍 {l.endereco}</div>}
               {l.obs && <div className="text-sm text-slate-400 mt-1">{l.obs}</div>}
               {moto ? <div className="mt-2 text-sm bg-blue-50 rounded-lg p-2"><div>🏍️ {moto.modelo} · {moto.placa} · saldo {brl(contratoInfo(moto, data.caixa)?.saldo || 0)}</div><div className="text-xs text-slate-500">Alugada em {fmtDate(moto.vinculo.dataInicio)} · {daysBetween(moto.vinculo.dataInicio, today())} dia(s)</div></div>
-                : <button onClick={() => setVincLoc(l.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><Link2 className="w-4 h-4" /> Vincular motocicleta</button>}
+                : <button onClick={() => setVincLoc(l.id)} className="mt-2 w-full text-sm border border-dashed border-slate-300 rounded-lg py-1.5 flex items-center justify-center gap-1 text-slate-600"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span> Vincular motocicleta</button>}
               {saidas.length > 0 && <div className="mt-2 text-xs text-slate-400 space-y-0.5">{saidas.map((s) => <div key={s.id}>Alugada em {fmtDate(s.dataInicio)} · saída em {fmtDate(s.dataSaida)} · {daysBetween(s.dataInicio, s.dataSaida)} dia(s)</div>)}</div>}
               {vincLoc === l.id && <VincForm mode="fromLoc" list={motosDisponiveis.map((m) => ({ id: m.id, label: `${m.modelo} ${m.placa}`, entrada: motoEntrada(m), valorSem: valSem(m) }))} onSave={(mid, venc, ent) => { criarVinculo(mid, l.id, venc, ent); setVincLoc(null); }} onCancel={() => setVincLoc(null)} />}
-              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditLoc(l.id)} className="flex items-center gap-1 text-slate-600"><Pencil className="w-4 h-4" /> Editar</button><button onClick={() => delLoc(l.id)} className="flex items-center gap-1 text-red-500"><Trash2 className="w-4 h-4" /> Excluir</button></div>
+              <div className="flex gap-3 mt-3 text-sm"><button onClick={() => setEditLoc(l.id)} className="flex items-center gap-1 text-slate-600"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span> Editar</button><button onClick={() => delLoc(l.id)} className="flex items-center gap-1 text-red-500"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span> Excluir</button></div>
             </div>
           ); })}
           {data.locatarios.length === 0 && !addLoc && <p className="text-center text-slate-400 text-sm py-8">Nenhum locatário cadastrado.</p>}
@@ -778,7 +851,7 @@ function App() {
         {tab === "caixa" && <Caixa data={data} upd={upd} />}
 
         {tab === "vencimentos" && <div className="space-y-3">
-          <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Filtrar por placa ou locatário" value={filtroVenc} onChange={(e) => setFiltroVenc(e.target.value)} /></div>
+          <div className="relative"><span className="w-4 h-4 absolute left-3 top-3 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Filtrar por placa ou locatário" value={filtroVenc} onChange={(e) => setFiltroVenc(e.target.value)} /></div>
           {vencList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">{ativos.length ? "Nenhum resultado." : "Nenhum contrato ativo."}</p>}
           {vencList.map(({ m, ci }) => (
             <div key={m.id} className={`bg-white rounded-xl p-4 shadow-sm border-l-4 ${ci?.vencido ? "border-red-500" : ci?.saldo > 0.005 ? "border-amber-400" : "border-green-400"}`}>
@@ -791,7 +864,7 @@ function App() {
                 <div className="text-xs font-medium text-slate-600">Vencimentos em aberto ({abertas.length})</div>
                 {abertas.map((p, i) => <div key={i} className="bg-white rounded-lg p-2 flex justify-between items-center gap-2">
                   <div className="text-xs min-w-0"><div className={p.vencido ? "text-red-600 font-medium" : "text-slate-700 font-medium"}>Semana de {fmtDate(p.data)}</div><div className="text-[11px] text-slate-400">{p.vencido ? `${p.atraso} dia(s) em atraso` : "a vencer"}{p.juros > 0.005 ? ` · inclui ${brl(p.juros)} de juros` : ""}</div>{p.restante < p.original - 0.005 && <div className="text-[11px] text-slate-400">pago {brl(p.original - p.restante)} de {brl(p.original)}</div>}</div>
-                  <div className="flex flex-col items-end gap-1 shrink-0"><b className={`text-sm ${p.vencido ? "text-red-600" : "text-slate-700"}`}>{brl(p.restante)}</b>{i === 0 && payMoto !== m.id ? <button onClick={() => registrarPagamento(m, p.restante, 0, [], today())} className="text-[11px] bg-green-600 text-white px-2 py-1 rounded-md flex items-center gap-1"><Check className="w-3 h-3" /> Dar baixa</button> : i > 0 ? <span className="text-[10px] text-slate-400">aguardando</span> : null}</div>
+                  <div className="flex flex-col items-end gap-1 shrink-0"><b className={`text-sm ${p.vencido ? "text-red-600" : "text-slate-700"}`}>{brl(p.restante)}</b>{i === 0 && payMoto !== m.id ? <button onClick={() => registrarPagamento(m, p.restante, 0, [], today())} className="text-[11px] bg-green-600 text-white px-2 py-1 rounded-md flex items-center gap-1"><span className="w-3 h-3" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><polyline points="20 6 9 17 4 12"/></svg></span> Dar baixa</button> : i > 0 ? <span className="text-[10px] text-slate-400">aguardando</span> : null}</div>
                 </div>)}
                 <p className="text-[10px] text-slate-400">A baixa quita sempre o vencimento mais antigo primeiro.</p>
               </div>; })()}
@@ -805,7 +878,7 @@ function App() {
 
         {tab === "cobrancas" && <div className="space-y-3">
           <div className="bg-red-600 text-white rounded-xl p-4"><div className="text-sm opacity-90">Cobranças vencidas</div><div className="text-2xl font-bold">{cobrList.length}</div><div className="text-sm mt-1">Total a receber: {brl(cobrList.reduce((s, a) => s + a.ci.saldo, 0))}</div></div>
-          {cobrList.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por placa ou locatário" value={buscaCobr} onChange={(e) => setBuscaCobr(e.target.value)} /></div>}
+          {cobrList.length > 0 && <div className="relative"><span className="w-4 h-4 absolute left-3 top-3 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por placa ou locatário" value={buscaCobr} onChange={(e) => setBuscaCobr(e.target.value)} /></div>}
           {cobrList.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhuma cobrança vencida. 🎉</p>}
           {cobrList.length > 0 && cobrListF.length === 0 && <p className="text-center text-slate-400 text-sm py-8">Nenhum resultado.</p>}
           {cobrListF.map(({ m, ci }) => (
@@ -815,7 +888,7 @@ function App() {
                 <div className="flex justify-between"><span className="text-slate-500">Saldo devedor</span><b className="text-red-600">{brl(ci.saldo)}</b></div>
                 {ci.jurosTotal > 0 && <div className="flex justify-between text-amber-600"><span>Juros incluídos</span><b>{brl(ci.jurosTotal)}</b></div>}
               </div>
-              {payMoto !== m.id && <button onClick={() => setPayMoto(m.id)} className="mt-2 w-full bg-green-600 text-white text-sm py-2 rounded-lg font-medium flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Dar baixa no pagamento</button>}
+              {payMoto !== m.id && <button onClick={() => setPayMoto(m.id)} className="mt-2 w-full bg-green-600 text-white text-sm py-2 rounded-lg font-medium flex items-center justify-center gap-1"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><polyline points="20 6 9 17 4 12"/></svg></span> Dar baixa no pagamento</button>}
               {payMoto === m.id && <PagamentoForm moto={m} saldo={ci.saldo} parcelas={ci.parcelas} onSave={(v, mt, des, dt) => registrarPagamento(m, v, mt, des, dt)} onCancel={() => setPayMoto(null)} />}
             </div>
           ))}
@@ -825,6 +898,7 @@ function App() {
 
         {tab === "config" && <Investidores data={data} upd={upd} busca={buscaInv} setBusca={setBuscaInv} list={investidoresList} />}
         {tab === "backup" && <Backup data={data} setData={setData} />}
+        {tab === "importar" && <ImportarPlanilha data={data} upd={upd} />}
       </div>
     </div>
   );
@@ -839,13 +913,13 @@ function Investidores({ data, upd, busca, setBusca, list }) {
   return (
     <div className="space-y-3">
       <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
-        <div className="flex items-center gap-2 font-medium text-slate-700"><UserPlus className="w-4 h-4" /> Novo acesso de investidor</div>
+        <div className="flex items-center gap-2 font-medium text-slate-700"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></span> Novo acesso de investidor</div>
         <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nome" value={f.nome} onChange={(e) => set("nome", e.target.value)} />
         <div className="grid grid-cols-2 gap-2"><input className="border rounded-lg px-3 py-2" placeholder="Usuário" value={f.user} onChange={(e) => set("user", e.target.value)} /><input className="border rounded-lg px-3 py-2" placeholder="Senha" value={f.senha} onChange={(e) => set("senha", e.target.value)} /></div>
-        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Criar acesso</button>
+        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span> Criar acesso</button>
       </div>
-      {data.investidores.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por nome ou usuário" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>}
-      {list.map((i) => <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">login: {i.user} · {countMotos(i.id)} moto(s)</div></div><button onClick={() => del(i.id)} className="text-red-500"><Trash2 className="w-4 h-4" /></button></div>)}
+      {data.investidores.length > 0 && <div className="relative"><span className="w-4 h-4 absolute left-3 top-3 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por nome ou usuário" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>}
+      {list.map((i) => <div key={i.id} className="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><div><div className="font-semibold">{i.nome}</div><div className="text-sm text-slate-500">login: {i.user} · {countMotos(i.id)} moto(s)</div></div><button onClick={() => del(i.id)} className="text-red-500"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span></button></div>)}
       {data.investidores.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum investidor cadastrado.</p>}
       {data.investidores.length > 0 && list.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum resultado.</p>}
     </div>
@@ -874,11 +948,11 @@ function Caixa({ data, upd }) {
         <input type="number" className="border rounded-lg px-3 py-2 w-full" placeholder="Valor (R$)" value={f.valor} onChange={(e) => set("valor", e.target.value)} />
         <input className="border rounded-lg px-3 py-2 w-full" placeholder="Descrição" value={f.descricao} onChange={(e) => set("descricao", e.target.value)} />
         <div className="grid grid-cols-2 gap-2"><select className="border rounded-lg px-3 py-2 text-sm" value={f.motoId} onChange={(e) => set("motoId", e.target.value)}><option value="">Sem moto vinculada</option>{data.motos.map((m) => <option key={m.id} value={m.id}>{m.modelo} {m.placa}</option>)}</select><input type="date" className="border rounded-lg px-3 py-2 text-sm" value={f.data} onChange={(e) => set("data", e.target.value)} /></div>
-        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" /> Lançar</button>
+        <button onClick={add} className="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-1"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span> Lançar</button>
         <p className="text-[11px] text-slate-400">Os pagamentos dos contratos devem ser feitos na aba Vencimentos/Cobranças para abater o saldo. Lançamentos aqui são avulsos.</p>
       </div>
       <div className="space-y-2">
-        {data.caixa.length > 0 && <div className="relative"><Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" /><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por descrição ou moto" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>}
+        {data.caixa.length > 0 && <div className="relative"><span className="w-4 h-4 absolute left-3 top-3 text-slate-400" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input className="border rounded-lg pl-9 pr-3 py-2 w-full text-sm" placeholder="Buscar por descrição ou moto" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>}
         {data.caixa.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum lançamento.</p>}
         {data.caixa.length > 0 && lista.length === 0 && <p className="text-center text-slate-400 text-sm py-6">Nenhum resultado.</p>}
         {lista.map((c) => (
@@ -890,26 +964,14 @@ function Caixa({ data, upd }) {
               {c.saldoInicial && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded ml-1">saldo inicial</span>}
               {c.comissaoPaga && <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded ml-1">comissão</span>}
             </div><div className="text-xs text-slate-400">{fmtDate(c.data)} {motoLabel(c.motoId) && `· ${motoLabel(c.motoId)}`}</div></div>
-            <div className="flex items-center gap-2"><span className={`font-semibold text-sm ${c.tipo === "entrada" ? "text-green-600" : "text-red-500"}`}>{c.tipo === "entrada" ? "+" : "−"} {brl(c.valor)}</span><button onClick={() => upd("caixa", (cx) => cx.filter((x) => x.id !== c.id))} className="text-slate-300 hover:text-red-500"><X className="w-4 h-4" /></button></div>
+            <div className="flex items-center gap-2"><span className={`font-semibold text-sm ${c.tipo === "entrada" ? "text-green-600" : "text-red-500"}`}>{c.tipo === "entrada" ? "+" : "−"} {brl(c.valor)}</span><button onClick={() => upd("caixa", (cx) => cx.filter((x) => x.id !== c.id))} className="text-slate-300 hover:text-red-500"><span className="w-4 h-4" style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle"}}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:"1em",height:"1em"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></button></div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-/* ====================== INICIALIZACAO ====================== */
-const _notCfg = SUPABASE_URL.indexOf("COLE_") !== -1 || SUPABASE_KEY.indexOf("COLE_") !== -1;
-const _root = ReactDOM.createRoot(document.getElementById("root"));
-if (_notCfg) {
-  _root.render(
-    <div className="max-w-md mx-auto mt-16 bg-white rounded-2xl p-6 shadow">
-      <h1 className="font-bold text-lg mb-2 text-slate-800">Falta um passo 🙂</h1>
-      <p className="text-sm text-slate-600">Abra este arquivo <b>index.html</b> num editor de texto (Bloco de Notas) e cole, lá no topo, a sua <b>Project URL</b> e a sua <b>chave</b> do Supabase nas linhas <code>SUPABASE_URL</code> e <code>SUPABASE_KEY</code>. Depois salve e atualize a página.</p>
-    </div>
-  );
-} else {
-  _root.render(<App />);
-}
+ReactDOM.render(<App />, document.getElementById("root"));
 </script>
 </body>
 </html>
